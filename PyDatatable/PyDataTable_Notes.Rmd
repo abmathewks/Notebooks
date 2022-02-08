@@ -1,0 +1,1857 @@
+---
+title: "Python DataTable Intro"
+author: "Abraham Mathew"
+date: "6/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+
+# PyDataTable Official Documentation 
+
+There are a number of ways to create a Frame object 
+
+```{r eval=FALSE}
+
+#import datatable
+from datatable import dt, f, by
+
+DT2 = dt.Frame(pandas_dataframe)
+
+DT3 = dt.Frame(numpy_array)
+
+DT4 = dt.fread("~/Downloads/dataset_01.csv")
+
+```
+
+## f Expression
+
+Expressions can be used in i or j and in other places.  
+
+```{r eval=FALSE}
+
+# simple example of an expression
+f.ColA
+
+f[3]
+f["ColB"]
+
+```
+
+This indicates a column ColA in some Frame. Here f is a variable that has to be imported from the datatable module. This variable provides a convenient way to reference any column in a Frame. 
+
+These f-expression support arithmetic operations as well as various mathematical and aggregate functions. For example, in order to select the values from column A normalized to range [0; 1] we can write the following:
+
+```{r eval=FALSE}
+
+from datatable import f, min, max
+
+DT[:, (f.A - min(f.A))/(max(f.A) - min(f.A))]
+
+```
+
+## Groupbys/joins
+
+- The by(…) modifier splits the frame into groups by the provided column(s), and then applies i and j within each group. This mostly affects aggregator functions such as sum(), min() or sd(), but may also apply in other circumstances. 
+
+```{r eval=FALSE}
+
+from datatable import f, by, sum
+
+DT = dt.fread("transactions.csv")
+
+DT[:, sum(f.quantity), by(f.product_id)]
+
+```
+
+- sort(…) controls the order of the rows in the result,
+
+```{r eval=FALSE}
+
+import datatable as dt
+from datatable import f, sort
+
+A = dt.Frame(product=["apples", "spam", "goo", "bobcat", "gold"], 
+             totals=[5.4, 2.777, 0.1, 2.9, 11.1])
+
+A[:, :, sort(-f.totals)]
+
+A[:, :, sort(-f.product)]
+ 
+```
+
+- join(…) allows you to join another frame to the current, equivalent to the SQL JOIN operator. 
+
+- In order to join frame X, it must be keyed. A keyed frame is conceptually similar to a SQL table with a unique primary key. This key may be either a single column, or several columns.
+
+- This will perform a left join where during the join each row of DT will be matched against the row of X with the same value of the key column, and if there are no such value in X, with an all-NA row.
+
+```{r eval=FALSE}
+
+X.key = "id"
+
+DT[:, :, join(X)]
+
+DT[:, sum(f.quantity * g.price), join(products)]
+
+```
+
+- This g is also a frame proxy; however it already refers to the second frame in the evaluated expression. This second frame appears when you are joining two or more frames together (more on that later). When that happens, symbol g is used to refer to the columns of the joined frame.
+
+```{r eval=FALSE}
+
+DT[:, sum(f.quantity * g.price), join(products)]
+
+```
+
+- There are a number of ways to export data 
+
+```{r eval=FALSE}
+
+DT.to_pandas()
+
+DT.to_csv("out.csv")
+
+```
+
+## Create a Data Table
+
+```{r eval=FALSE}
+
+import datatable as dt
+import numpy as np
+
+np.random.seed(1)
+
+dt.Frame(np.random.randn(1000000))
+
+```
+
+## Convert Pandas to Data Table
+
+```{r eval=FALSE}
+
+import pandas as pd
+
+pf = pd.DataFrame({"A": range(1000)})
+
+dt.Frame(pf)
+
+```
+
+## Parse Text (csv) Files
+
+```{r eval=FALSE}
+
+DT = dt.fread("train.csv")
+
+```
+
+## Write the Frame
+
+```{r eval=FALSE}
+
+DT.to_csv("out.csv")
+
+```
+
+## Basic Frame Properties
+
+```{r eval=FALSE}
+
+DT.shape    # (nrows, ncols)
+
+DT.names    # column names
+
+DT.stypes   # column types
+
+```
+
+## Compute Per-Column Summary Stats
+
+```{r eval=FALSE}
+
+DT.sum()
+
+DT.max()
+
+DT.min()
+
+DT.mean()
+
+DT.sd()
+
+DT.mode()
+
+DT.nmodal()
+
+DT.nunique()
+
+```
+
+## Select Subsets of Rows/Columns
+
+```{r eval=FALSE}
+
+DT[:, "A"]         # select 1 column
+
+DT[:10, :]         # first 10 rows
+
+DT[::-1, "A":"D"]  # reverse rows order, columns from A to D
+
+DT[27, 3]          # single element in row 27, column 3 (0-based)
+
+```
+
+## Delete Rows/Columns
+
+```{r eval=FALSE}
+
+del DT[:, "D"]     # delete column D
+
+del DT[f.A < 0, :] # delete rows where column A has negative values
+
+```
+
+## Filter Rows
+
+```{r eval=FALSE}
+
+DT[(f.x > mean(f.y) + 2.5 * sd(f.y)) | (f.x < -mean(f.y) - sd(f.y)), :]
+
+```
+
+## Sort Columns
+
+```{r eval=FALSE}
+
+DT.sort("A")
+
+DT[:, :, sort(f.A)]
+
+```
+
+## Perform Groupby Calculations
+
+```{r eval=FALSE}
+
+DT[:, mean(f.x), by("y")]
+
+```
+
+## Append Rows/Columns
+
+```{r eval=FALSE}
+
+DT1.cbind(DT2, DT3)
+
+DT1.rbind(DT4, force=True)
+
+```
+
+
+# Selecting and Grouping Data with Python Datatable
+
+## Basic Template 
+
+The basic data.table template looks like the following.
+
+```{r eval=FALSE}
+
+DT[ i, j, by ]
+
+i = where (which rows)
+j = select (do what)
+by = other modifiers (group by, order, etc)
+
+```
+
+- DT refers to the data frame. 
+- The i part is used for subsetting on rows and shares a similar concept with SQL's WHERE clause.
+- The j part is used to select columns and act on them.
+- ... are for extra modifiers, e.g grouping, sorting, joining, etc.
+
+```{r eval=FALSE}
+
+#import datatable
+from datatable import dt, f, by
+
+#read in data
+df = dt.fread("Data_files/iris.csv")
+
+```
+
+- dt refers to the datatable module.
+
+- All computations occur within the [] bracket.
+
+- dt.fread is a powerful and very fast function for reading in various text files, zip archives, and urls. It can even read in data from the command line.
+
+- by is a function for grouping.
+
+- f is a variable that provides a convenient way to reference the data frame's column within the square brackets. It is really useful when performing computations or creating expressions.
+
+- In a jupyter notebook, the tab colours for the columns indicate various data types - blue is for float column, green is for integer column, red is for string column, yellow is for boolean, while black is for object column.
+
+```{r eval=FALSE}
+
+#shape of data
+df.shape
+# (150, 5)
+
+#column names
+df.names
+# ('sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species')
+
+#data types of the columns
+df.stypes
+# (stype.float64, stype.float64, stype.float64, stype.float64, stype.str32)
+
+```
+
+## Subset Rows With i
+
+Select the first three rows
+
+```{r eval=FALSE}
+
+#We can use python's slicing syntax to get the rows. 
+df[:3, :]
+
+```
+
+Select the 2nd, 4th and 8th rows
+
+```{r eval=FALSE}
+
+#Python has a zero based indexing notation,
+#so, we will pass in a list [1,3,7]
+
+df[[1,3,7], :]
+
+```
+
+Find rows where species == "versicolor"
+
+This is an expression and uses the f variable :
+
+```{r eval=FALSE}
+
+result = df[f.species == "versicolor", :]
+result.head()
+
+```
+
+Find rows where species == "versicolor" and sepal_length == 7
+
+```{r eval=FALSE}
+
+df[(f.species == "versicolor") & (f.sepal_length == 7), :]
+
+```
+
+## Select Columns with j 
+
+Select species, petal_width and petal_length columns
+
+```{r eval=FALSE}
+
+#Simply pass a list of the names in the j section 
+result = df[:, ["species","petal_width","petal_length"]]
+
+result.head()
+
+```
+
+Select the last two columns
+
+```{r eval=FALSE}
+
+#Again, we use python's indexing syntax
+result = df[:, -2:]
+
+result.head()
+
+```
+
+Select only columns whose names end with length
+
+```{r eval=FALSE}
+
+result = df[:, [col.endswith("length") for col in df.names]]
+
+result.head()
+
+```
+
+Calculate the mean value of sepal_length
+
+```{r eval=FALSE}
+
+df[:, dt.mean(f.sepal_length)]
+
+```
+
+To get aggregates of more than one column, pass a list of column names prefixed with the f symbol to j.
+
+```{r eval=FALSE}
+
+#calculate mean value of petal_width and petal_length
+df[:, dt.mean([f.petal_width, f.petal_length])]
+
+```
+
+Select only species and petal_length columns for rows where the petal_length is greater than 1.5
+
+```{r eval=FALSE}
+
+result = df[f.petal_length > 1.5, ["species", "petal_length"]]
+
+result.head()
+
+```
+
+Select only string columns
+
+```{r eval=FALSE}
+
+result = df[:, f[str]]
+
+result.head()
+
+```
+
+Multiply petal_length by 2 and add it as a new column petal_double
+
+```{r eval=FALSE}
+
+sol_1 = df.copy()
+
+sol_1["petal_double"] = sol_1[:, 2 * f.petal_length]
+
+sol_3 = df.copy()
+
+sol_3[:, dt.update(petal_double = 2 * f.petal_length)]
+
+```
+
+Drop the sepal_width column from the table
+
+```{r eval=FALSE}
+
+del sol_1["sepal_width"]
+
+sol_3 = sol_3[:, f[:].remove(f.sepal_width)]
+
+```
+
+## Other Modifiers 
+
+Sort data by sepal_width
+
+```{r eval=FALSE}
+
+outcome = df[:, :, dt.sort('sepal_width')]
+
+outcome = df[:, :, dt.sort([f.sepal_width, -f.petal_width])]
+
+```
+
+## Get the average sepal length per species using Group By
+
+```{r eval=FALSE}
+
+df[:, dt.mean(f.sepal_length), by("species")] 
+
+df[:, dt.mean([f.sepal_length, f.petal_length]), by("species")]
+
+df[f.sepal_width>=3,:][:,dt.mean([f.sepal_length, f.petal_length]), by("species")]
+
+df[:, dt.mean(f.sepal_length), by(f.sepal_width > 3)]
+
+df[:, {"species_count" : dt.count()}, by("species")]
+
+df[:, dt.count(), by(f.species, f.sepal_width > 3)]
+
+```
+
+# Replicating .SD in Python Datatable
+
+## .SD - Subset of Data
+
+```{r eval=FALSE}
+
+from datatable import dt, by, sort, mean, count, update, max, f, fread
+
+df = fread('Data_files/iris.csv')
+
+```
+
+Number of unique observations per column
+
+```{r eval=FALSE}
+
+# DT[, lapply(.SD, uniqueN)] --> Rdatatable
+
+df.nunique()
+
+```
+
+Mean of all columns by species
+
+```{r eval=FALSE}
+
+# DT[, lapply(.SD, mean), by = species] --> Rdatatable
+
+df[:, mean(f[:]), by('species')]
+
+```
+
+First two observations by species
+
+```{r eval=FALSE}
+
+# DT[, .SD[1:2], by = species]
+
+df[:2, :, by('species')]
+
+
+```
+
+# Data Wrangling with Python Datatable - Replicate Pandas' Map Function
+
+```{r eval=FALSE}
+
+from datatable import dt, f
+
+df = dt.Frame({
+    "first_name": ["Jason", "Molly", "Tina", "Jake", "Amy"],
+    "last_name": ["Miller", "Jacobson", "Ali", "Milner", "Cooze"],
+    "age": [42, 52, 36, 24, 73],
+    "city": ["San Francisco", "Baltimore", "Miami", "Douglas", "Boston"],
+})
+
+city_to_state = {
+    "San Francisco": "California",
+    "Baltimore": "Maryland",
+    "Miami": "Florida",
+    "Douglas": "Arizona",
+    "Boston": "Massachusetts",
+}
+
+df
+
+```
+
+Step 1: Create a temporary dataframe to hold the values in city.
+
+```{r eval=FALSE}
+
+m = df['city']
+m
+
+```
+
+Step 2: Replace the values in m with city_to_state, by using the replace function. Note that the replace function does not require assignment, as the computation is done inplace:
+
+```{r eval=FALSE}
+
+m.replace(city_to_state)
+m
+
+```
+
+Step 3: Assign m to new column state in df:
+
+```{r eval=FALSE}
+
+df["state"] = m
+df
+
+```
+
+
+# Data Wrangling with Python Datatable - Select Columns by Data Type
+
+```{r eval=FALSE}
+
+from datatable import dt, f
+
+df = dt.Frame({'a': [1, 2, 1, 2, 1, 2],
+ 'b': [True, False, True, False, True, False],
+ 'c': [1.0, 2.0, 1.0, 2.0, 1.0, 2.0]}
+)
+
+```
+
+Select the boolean column
+
+```{r eval=FALSE}
+
+df[:, f[bool]]
+
+```
+
+Select the float column
+
+```{r eval=FALSE}
+
+df[:, f[float]]
+
+```
+
+Exclude integer column
+
+```{r eval=FALSE}
+
+df[:, [dtype.name != "int" for dtype in df.ltypes]]
+
+```
+
+# Data Wrangling with Python Datatable - Transformations Within a GroupBy
+
+```{r eval=FALSE}
+
+from datatable import dt, f, update, by
+
+df = dt.Frame(
+    {
+        "Date": ["2019-01-01", "2019-01-01", "2019-01-01", "2019-01-01", "2019-01-01"],
+        "Zip": [90102, 90102, 90102, 90102, 90103],
+        "Price": [58.02, 81.55, 11.97, 93.23, 13.68],
+    }
+)
+
+
+```
+
+```{r eval=FALSE}
+
+df[:, update(Ratio = f.Price / dt.max(f.Price)), by("Date", "Zip")]
+
+```
+
+# Data Wrangling with Python Datatable - Row-wise Transformations
+
+```{r eval=FALSE}
+
+from datatable import dt, f, update
+
+df = dt.Frame({'Ind': [1, 2, 3],
+               'Department': ['Electronics', 'Clothing', 'Grocery'],
+               'Value1': [5, 4, 3],
+               'Value2': [4, 3, 3],
+               'Value3': [3, 2, 5],
+               'Value4': [2, 1, 1]})
+
+```
+
+```{r eval=FALSE}
+
+value_columns = [f[name] for name in df.names if "Value" in name]
+
+max_min_difference = dt.rowmax(value_columns) - dt.rowmin(value_columns)
+
+df[:, update(difference = max_min_difference)]
+
+```
+
+Step 1 : Filter for columns that start with Value and prefix with the f symbol
+
+```{r eval=FALSE}
+
+value_columns = [f[name] for name in df.names if "Value" in name]
+value_columns
+#  [FExpr<f['Value1']>,
+#  FExpr<f['Value2']>,
+#  FExpr<f['Value3']>,
+#  FExpr<f['Value4']>]
+
+```
+
+Step 2 : Create an f-expression of the difference between the row maximum and row minimum of value_columns. Note that there is no execution at this point; the execution of a f-expression only occurs within the brackets of a datatable frame.
+
+```{r eval=FALSE}
+
+max_min_difference = dt.rowmax(value_columns) - dt.rowmin(value_columns)
+max_min_difference
+
+```
+
+Step 3: Apply max_min_difference to the datatable frame to get the results
+
+```{r eval=FALSE}
+
+df[:, update(difference = max_min_difference)]
+
+```
+
+# Data Wrangling with Python Datatable - Conditional Statements
+
+## Transformation based on Single Conditions
+
+Task: if c is positive, then value should be a - b, else b - a.
+
+```{r eval=FALSE}
+
+from datatable import dt, f, update, ifelse
+
+df = dt.Frame({"a": [1, 1, 2, 4], 
+               "b": [2, 2, 3, 2], 
+               "c": [3, -3, 2, -1]})
+df
+
+```
+
+Step 1 : Define the condition, with the True and False values.
+
+```{r eval=FALSE}
+
+condition = f.c >= 0 # positive values
+true = f.a - f.b
+false = f.b - f.a
+
+```
+
+Step 2 : Create the ifelse expression.
+
+```{r eval=FALSE}
+
+if_statement = ifelse(condition, true, false)
+
+```
+
+Step 3: Apply the if_statement to the datatable frame to get the results
+
+```{r eval=FALSE}
+
+df[:, update(b = if_statement)]
+
+```
+
+## Transformation based on Multiple Conditions
+
+Task:
+- if Set is equal to 'Z' and Type is equal to 'A' then assign 'yellow' to color.
+- If Set is equal to 'Z' and Type is equal to 'B' then assign 'blue' to color.
+- If Type is equal to 'B' then assign 'purple' to color.
+- Otherwise, assign 'black' to color.
+
+```{r eval=FALSE}
+
+df = dt.Frame({"Type": ["A", "B", "B", "C"], 
+               "Set": ["Z", "Z", "X", "Y"]})
+
+df
+
+```
+
+Step 1 : Define the conditions, with the True and False values.
+
+```{r eval=FALSE}
+
+condition1 = (f.Set == "Z") & (f.Type == "A")
+true1 = "yellow"
+
+condition2 = (f.Set == "Z") & (f.Type == "B")
+true2 = "blue"
+
+condition3 = f.Type == "B"
+true3 = "purple"
+false = "black"
+
+```
+
+Step 2 : Create the ifelse expression.
+
+```{r eval=FALSE}
+
+if_statements = ifelse(condition1, true1, 
+                       condition2, true2, 
+                       condition3, true3, 
+                       false)
+
+```
+
+Step 3: Apply the if_statements to the datatable frame to get the results
+
+```{r eval=FALSE}
+
+df[:, update(color = if_statements)]
+
+```
+
+# Data Wrangling with Python Datatable - Selecting Columns
+
+## Basics
+
+```{r eval=FALSE}
+
+from datatable import dt, f, ltype, stype
+import re
+
+file_path = "https://github.com/samukweku/data-wrangling-blog/raw/master/_notebooks/Data_files/msleep.txt"
+DT = dt.fread(file_path)
+DT.head(5)
+
+```
+
+You can select columns by name or position in the j section:
+
+```{r eval=FALSE}
+
+DT[:, 'genus'].head(5)
+
+DT[:, 1].head()
+
+DT[:, -10].head()
+
+```
+
+If you are selecting a single column, you can pass it into the brackets without specifying the i section:
+
+```{r eval=FALSE}
+
+DT['genus'].head(5)
+
+```
+
+You can select columns by passing a list/tuple of the column names:
+
+```{r eval=FALSE}
+
+columns_to_select = ["name", "genus", "sleep_total", "awake"]
+
+DT[:, columns_to_select].head(5)
+
+```
+
+You can pass a list/tuple of booleans:
+
+```{r eval=FALSE}
+
+columns_to_select = [True, True, False, False, False, True,False,True,True,False,False]
+
+DT[:, columns_to_select].head(5)
+
+```
+
+You can select chunks of columns using python's slice syntax or via the start:end shortcut:
+
+```{r eval=FALSE}
+
+DT[:, slice("name", "order")].head(5)
+
+DT[:, "name" : "order"].head(5)
+
+columns_to_select = [slice("name", "order"), slice("sleep_total", "sleep_cycle")]
+DT[:, columns_to_select].head(5)
+
+```
+
+For the shortcut notation, for multiple selections, it has to be prefixed with datatable's f symbol:
+
+```{r eval=FALSE}
+
+columns_to_select = [f["name" : "order", "sleep_total" : "sleep_cycle"]]
+
+DT[:, columns_to_select].head(5)
+
+```
+
+To deselect/drop columns you can use the remove function:
+
+```{r eval=FALSE}
+
+columns_to_remove = [f["sleep_total" : "awake", "conservation"]]
+
+DT[:, f[:].remove(columns_to_remove)].head(5)
+
+```
+
+## Selecting Columns based on Partial Names
+
+You can use python's string functions to filter for columns with partial matching:
+
+```{r eval=FALSE}
+
+columns_to_select = [name.startswith("sleep") for name in DT.names]
+
+DT[:, columns_to_select].head(5)
+
+```
+
+```{r eval=FALSE}
+
+columns_to_select = ["eep" in name or name.endswith("wt") for name in DT.names]
+
+DT[:, columns_to_select].head(5)
+
+```
+
+## Selecting columns by their data type
+
+You can pass a data type in the j section:
+
+```{r eval=FALSE}
+
+DT[:, str].head(5)
+
+DT[:, [int, float]].head(5)
+
+```
+
+You can also pass datatable's stype or ltype data types:
+
+```{r eval=FALSE}
+
+DT[:, ltype.str].head(5)
+
+DT[:, stype.float64].head(5)
+
+```
+
+You can remove columns based on their data type:
+
+```{r eval=FALSE}
+
+columns_to_remove = [f[int, float]]
+
+DT[:, f[:].remove(columns_to_remove)].head(5)
+
+```
+
+An alternative is to preselect the columns you intend to keep:
+
+```{r eval=FALSE}
+
+# creates a list of booleans
+columns_to_select = [
+    dtype not in (ltype.int, ltype.real)
+    for name, dtype in zip(DT.names, DT.ltypes) 
+]
+
+DT[:, columns_to_select].head(5)
+
+```
+
+```{r eval=FALSE}
+
+matching_frames = [frame for frame in DT if frame.ltypes[0] not in (ltype.real, ltype.int)]
+
+DT[:, matching_frames].head(5)
+
+```
+
+## Selecting columns by logical expressions
+
+Say we wish to select columns that are numeric, and have a mean greater than 10:
+
+```{r eval=FALSE}
+
+# returns a list of booleans
+columns_to_select = [
+    ltype in (ltype.real, ltype.int) and DT[name].mean()[0, 0] > 10
+    for name, ltype in zip(DT.names, DT.ltypes)
+]
+
+DT[:, columns_to_select].head(5)
+
+```
+
+```{r eval=FALSE}
+
+matching_frames = [frame for frame in DT 
+                    if frame.ltypes[0] in (ltype.int, ltype.real) 
+                    and frame.mean()[0,0] > 10]
+
+DT[:, matching_frames].head(5)
+
+```
+
+Let's look at another example, where we select only columns where the number of distinct values is less than 10:
+
+```{r eval=FALSE}
+
+# returns a list of booleans
+columns_to_select = [frame.nunique()[0, 0] < 10 for frame in DT]
+
+DT[:, columns_to_select].head(5)
+
+```
+
+```{r eval=FALSE}
+
+matching_frames = [frame for frame in DT if frame.nunique()[0,0] < 10]
+
+DT[:, matching_frames].head(5)
+
+```
+
+## Renaming Columns
+
+```{r eval=FALSE}
+
+new_names = {"animal": f.name, "extinction_threat": f.conservation}
+
+DT[:, f.sleep_total.extend(new_names)].head(5)
+
+```
+
+```{r eval=FALSE}
+
+DT_copy = DT.copy()
+
+DT_copy.names = {"name": "animal", "conservation": "extinction_threat"}
+
+```
+
+## Reformatting all Column Names
+
+You can use python's string functions to reformat column names.
+
+Let's convert all column names to uppercase:
+
+```{r eval=FALSE}
+
+DT_copy.names = [name.upper() for name in DT.names] # or list(map(str.upper, DT.names))
+
+```
+
+
+# Simple Example
+
+```{r eval=FALSE}
+
+# import libraries
+import pandas as pd 
+from datatable import dt, f, by
+
+# create user defined function
+def get_column(data, col_name):
+    results = data[:, col_name]
+    return results
+
+# create a data frame        
+df = pd.DataFrame({"R1": [1,2,3], "R2": [4,2,6], "R3": [7,8,2]})
+
+# transform the data frame to a data table (Frame)
+dt = dt.Frame(df)
+
+```
+
+```{r eval=FALSE}
+
+get_column(dt, "R2")
+
+columns_to_select = ["R1", "R2"]
+get_column(dt, columns_to_select)
+
+```
+
+```{r eval=FALSE}
+
+dt[:, f["R1"]]
+
+col_name = "R1"
+dt[:, f[col_name]]
+
+dt[f.R1 == 2, :]
+
+dt[:, ["R1","R2"]]
+
+```
+
+
+```{r eval=FALSE}
+
+from datatable import dt 
+
+df = dt.Frame(
+    {
+        "Date": ["2019-01-01", "2019-01-01", "2019-01-01", "2019-01-01", "2019-01-01"],
+        "Zip": [90102, 90102, 90102, 90102, 90103],
+        "Price": [58.02, 81.55, 11.97, 93.23, 13.68],
+    }
+)
+
+```
+
+
+```{r eval=FALSE}
+
+df[:, f.Zip]
+
+df[:, "Zip"]
+
+df[:, f["Zip"]]
+
+col_name = "Zip"
+df[:, f[col_name]]
+
+col_names = ["Date","Zip"]
+df[:, col_names]
+
+```
+
+
+```{r eval=FALSE}
+
+df[f.Price >= 60, :]
+
+df[f["Price"] >= 60, :]
+
+col_name = "Zip"
+df[f["Price"] >= 60, f[col_name]]
+
+```
+
+
+```{r eval=FALSE}
+
+df["new"] = df[:, 2 * f["Price"]]
+
+```
+
+
+```{r eval=FALSE}
+
+from datatable import dt, fread
+
+fread('iris.csv')
+
+```
+
+
+```{r eval=FALSE}
+
+url = "https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv"
+
+fread(url)
+
+```
+
+
+```{r eval=FALSE}
+
+fread("excel.xlsx")
+
+fread("excel.xlsx/Sheet1")
+
+```
+
+
+```{r eval=FALSE}
+
+df[:, 2]  # third row 
+
+```
+
+
+```{r eval=FALSE}
+
+DT[:, ['integers', 'strings']]
+
+```
+
+
+```{r eval=FALSE}
+
+DT[:, (3, 5, 6)]
+
+```
+
+
+```{r eval=FALSE}
+
+DT[:, ["i" in name for name in DT.names]]
+
+DT[:, [column.stype.ltype.name in ("real", "int") and column.mean1() > 3
+       for column in DT]]
+
+```
+
+
+```{r eval=FALSE}
+
+DT[:, f[:].remove(f.dates)]
+
+DT[:, f[:].remove(f[0])]
+
+DT[:, f[:].remove(f[int, float])]
+
+```
+
+
+```{r eval=FALSE}
+
+from datatable import (dt, f, by, ifelse, update, sort,
+                       count, min, max, mean, sum, rowsum)
+
+df =  dt.Frame("""Fruit   Date       Name  Number
+                  Apples  10/6/2016  Bob     7
+                  Apples  10/6/2016  Bob     8
+                  Apples  10/6/2016  Mike    9
+                  Apples  10/7/2016  Steve  10
+                  Apples  10/7/2016  Bob     1
+                  Oranges 10/7/2016  Bob     2
+                  Oranges 10/6/2016  Tom    15
+                  Oranges 10/6/2016  Mike   57
+                  Oranges 10/6/2016  Bob    65
+                  Oranges 10/7/2016  Tony    1
+                  Grapes  10/7/2016  Bob     1
+                  Grapes  10/7/2016  Tom    87
+                  Grapes  10/7/2016  Bob    22
+                  Grapes  10/7/2016  Bob    12
+                  Grapes  10/7/2016  Tony   15""")
+
+df[:, sum(f.Number), by('Fruit')]
+
+```
+
+## Group by multiple columns:
+
+```{r eval=FALSE}
+
+df[:, sum(f.Number), by('Fruit', 'Name')]
+
+```
+
+## By column position:
+
+```{r eval=FALSE}
+
+df[:, sum(f.Number), by(f[0])]
+
+```
+
+## By boolean expression:
+
+```{r eval=FALSE}
+
+df[:, sum(f.Number), by(f.Fruit == "Apples")]
+
+```
+
+## Combination of column and boolean expression:
+
+```{r eval=FALSE}
+
+df[:, sum(f.Number), by(f.Name, f.Fruit == "Apples")]
+
+```
+
+## Apply multiple aggregate functions to a column in the j section:
+
+```{r eval=FALSE}
+
+df[:, {"min": min(f.Number),
+       "max": max(f.Number)},
+   by('Fruit','Date')]
+
+```
+
+## Get sum of col3 and col4, grouped by col1 and col2:
+
+```{r eval=FALSE}
+
+df = dt.Frame(""" col1   col2   col3   col4   col5
+                  a      c      1      2      f
+                  a      c      1      2      f
+                  a      d      1      2      f
+                  b      d      1      2      g
+                  b      e      1      2      g
+                  b      e      1      2      g""")
+
+df[:, sum(f["col3":"col4"]), by('col1', 'col2')]
+
+```
+
+## Apply different aggregate functions to different columns:
+
+```{r eval=FALSE}
+
+df[:, [max(f.col3), min(f.col4)], by('col1', 'col2')]
+
+```
+
+## Group by column idx and get the row sum of A and B, C and D:
+
+```{r eval=FALSE}
+
+df = dt.Frame(""" idx  A   B   C   D   cat
+                   J   1   2   3   1   x
+                   K   4   5   6   2   x
+                   L   7   8   9   3   y
+                   M   1   2   3   4   y
+                   N   4   5   6   5   z
+                   O   7   8   9   6   z""")
+
+df[:,
+    {"AB" : sum(rowsum(f['A':'B'])),
+     "CD" : sum(rowsum(f['C':'D']))},
+   by('idx')
+   ]
+
+```
+
+## get the difference between the largest and smallest value within each group:
+
+```{r eval=FALSE}
+
+df = dt.Frame("""GROUP VALUE
+                  1     5
+                  2     2
+                  1     10
+                  2     20
+                  1     7""")
+
+df[:, max(f.VALUE) - min(f.VALUE), by('GROUP')]
+
+```
+
+## Null values are not excluded from the grouping column
+
+```{r eval=FALSE}
+
+df = dt.Frame("""  a    b    c
+                   1    2.0  3
+                   1    NaN  4
+                   2    1.0  3
+                   1    2.0  2""")
+
+df[:, sum(f[:]), by('b')]
+
+df[f.b != None, :][:, sum(f[:]), by('b')]
+
+```
+
+## Filtration
+
+This occurs in the i section of the groupby, where only a subset of the data per group is needed
+
+Select the first row per group:
+
+```{r eval=FALSE}
+
+df = dt.Frame("""A   B
+                 1  10
+                 1  20
+                 2  30
+                 2  40
+                 3  10""")
+
+# passing 0 as index gets the first row after the grouping
+# note that python's index starts from 0, not 1
+
+df[0, :, by('A')]
+
+```
+
+## Select the last row per group:
+
+```{r eval=FALSE}
+
+df[-1, :, by('A')]
+
+```
+
+## Select the nth row per group. Task : select the second row per group:
+
+```{r eval=FALSE}
+
+df[1, :, by('A')]
+
+```
+
+## Select the latest entry per group:
+
+```{r eval=FALSE}
+
+df =  dt.Frame("""   id    product  date
+                    220    6647     2014-09-01
+                    220    6647     2014-09-03
+                    220    6647     2014-10-16
+                    826    3380     2014-11-11
+                    826    3380     2014-12-09
+                    826    3380     2015-05-19
+                    901    4555     2014-09-01
+                    901    4555     2014-10-05
+                    901    4555     2014-11-01""")
+
+df[-1, :, by('id'), sort('date')]
+
+```
+
+## Replicate SQL’s HAVING clause. Task: Filter for groups where the length/count is greater than 1:
+
+```{r eval=FALSE}
+
+df = dt.Frame([[1, 1, 5], [2, 3, 6]], names=['A', 'B'])
+df
+
+# Get the count of each group,
+# and assign to a new column, using the update method
+# note that the update operation is in-place;
+# there is no need to assign back to the dataframe
+df[:, update(filter_col = count()), by('A')]
+
+# The new column will be added to the end
+# We use an f-expression to return rows
+# in each group where the count is greater than 1
+df[f.filter_col > 1, f[:-1]]
+
+```
+
+## Keep only rows per group where diff is the minimum:
+
+```{r eval=FALSE}
+
+df = dt.Frame(""" item    diff   otherstuff
+                    1       2            1
+                    1       1            2
+                    1       3            7
+                    2      -1            0
+                    2       1            3
+                    2       4            9
+                    2      -6            2
+                    3       0            0
+                    3       2            9""")
+
+df[:,
+   #get boolean for rows where diff column is minimum for each group
+   update(filter_col = f.diff == min(f.diff)),
+   by('item')]
+
+df[f.filter_col == 1, :-1]
+
+```
+
+## Keep only entries where make has both 0 and 1 in sales:
+
+```{r eval=FALSE}
+
+df  =  dt.Frame(""" make    country  other_columns   sale
+                    honda    tokyo       data          1
+                    honda    hirosima    data          0
+                    toyota   tokyo       data          1
+                    toyota   hirosima    data          0
+                    suzuki   tokyo       data          0
+                    suzuki   hirosima    data          0
+                    ferrari  tokyo       data          1
+                    ferrari  hirosima    data          0
+                    nissan   tokyo       data          1
+                    nissan   hirosima    data          0""")
+
+df[:,
+   update(filter_col = sum(f.sale)),
+   by('make')]
+
+df[f.filter_col == 1, :-1]
+
+```
+
+## Transformation
+
+This is when a function is applied to a column after a groupby and the resulting column is appended back to the dataframe. The number of rows of the dataframe is unchanged. The update() method makes this possible and easy.
+
+Get the minimum and maximum of column c per group, and append to dataframe:
+
+```{r eval=FALSE}
+
+df = dt.Frame(""" c     y
+                  9     0
+                  8     0
+                  3     1
+                  6     2
+                  1     3
+                  2     3
+                  5     3
+                  4     4
+                  0     4
+                  7     4""")
+
+# Assign the new columns via the update method
+df[:,
+   update(min_col = min(f.c),
+          max_col = max(f.c)),
+  by('y')]
+df
+
+```
+
+## Fill missing values by group mean:
+
+```{r eval=FALSE}
+
+df = dt.Frame({'value' : [1, None, None, 2, 3, 1, 3, None, 3],
+               'name' : ['A','A', 'B','B','B','B', 'C','C','C']})
+
+df
+
+# This uses a combination of update and ifelse methods:
+df[:,
+   update(value = ifelse(f.value == None,
+                         mean(f.value),
+                         f.value)),
+   by('name')]
+
+df
+
+```
+
+## Transform and Aggregate on multiple columns
+
+Task: Get the sum of the aggregate of column a and b, grouped by c and d and append to dataframe:
+
+```{r eval=FALSE}
+
+df = dt.Frame({'a' : [1,2,3,4,5,6],
+               'b' : [1,2,3,4,5,6],
+               'c' : ['q', 'q', 'q', 'q', 'w', 'w'],
+               'd' : ['z','z','z','o','o','o']})
+df
+
+df[:,
+   update(e = sum(f.a) + sum(f.b)),
+   by('c', 'd')
+   ]
+
+df
+
+```
+
+## Replicate R’s groupby mutate
+
+Task : Get ratio by dividing column c by the product of column c and d, grouped by a and b:
+
+```{r eval=FALSE}
+
+df = dt.Frame(dict(a = (1,1,0,1,0),
+                   b = (1,0,0,1,0),
+                   c = (10,5,1,5,10),
+                   d = (3,1,2,1,2))
+              )
+df
+
+df[:,
+   update(ratio = f.c / sum(f.c * f.d)),
+   by('a', 'b')
+   ]
+df
+
+```
+
+## Groupby on boolean expressions
+
+## Conditional sum with groupby
+
+Task: sum data1 column, grouped by key1 and rows where key2 == "one":
+
+```{r eval=FALSE}
+
+df = dt.Frame("""data1        data2     key1  key2
+                 0.361601    0.375297     a    one
+                 0.069889    0.809772     a    two
+                 1.468194    0.272929     b    one
+                -1.138458    0.865060     b    two
+                -0.268210    1.250340     a    one""")
+
+df[:,
+   sum(f.data1),
+   by(f.key2 == "one", f.key1)][f.C0 == 1, 1:]
+
+```
+
+## Conditional sums based on various criteria
+
+```{r eval=FALSE}
+
+df = dt.Frame(""" A_id       B       C
+                    a1      "up"     100
+                    a2     "down"    102
+                    a3      "up"     100
+                    a3      "up"     250
+                    a4     "left"    100
+                    a5     "right"   102""")
+
+df[:,
+   {"sum_up": sum(f.B == "up"),
+    "sum_down" : sum(f.B == "down"),
+    "over_200_up" : sum((f.B == "up") & (f.C > 200))
+    },
+   by('A_id')]
+
+```
+
+## Other 
+
+## Aggregation on values in a column
+
+Task: group by Day and find minimum Data_Value for elements of type TMIN and maximum Data_Value for elements of type TMAX:
+
+```{r eval=FALSE}
+
+df = dt.Frame("""  Day    Element  Data_Value
+                  01-01   TMAX    112
+                  01-01   TMAX    101
+                  01-01   TMIN    60
+                  01-01   TMIN    0
+                  01-01   TMIN    25
+                  01-01   TMAX    113
+                  01-01   TMAX    115
+                  01-01   TMAX    105
+                  01-01   TMAX    111
+                  01-01   TMIN    44
+                  01-01   TMIN    83
+                  01-02   TMAX    70
+                  01-02   TMAX    79
+                  01-02   TMIN    0
+                  01-02   TMIN    60
+                  01-02   TMAX    73
+                  01-02   TMIN    31
+                  01-02   TMIN    26
+                  01-02   TMAX    71
+                  01-02   TMIN    26""")
+df[:,
+   {"TMAX": max(ifelse(f.Element=="TMAX", f.Data_Value, None)),
+    "TMIN": min(ifelse(f.Element=="TMIN", f.Data_Value, None))},
+   by(f.Day)]
+
+```
+
+## Group-by and conditional sum and add back to data frame
+
+Task: sum the Count value for each ID, when Num is (17 or 12) and Letter is 'D' and then add the calculation back to the original data frame as column 'Total':
+
+```{r eval=FALSE}
+
+df = dt.Frame(""" ID  Num  Letter  Count
+                  1   17   D       1
+                  1   12   D       2
+                  1   13   D       3
+                  2   17   D       4
+                  2   12   A       5
+                  2   16   D       1
+                  3   16   D       1""")
+                  
+expression = ((f.Num==17) | (f.Num==12)) & (f.Letter == "D")
+df[:, update(Total = sum(expression * f.Count)),
+      by(f.ID)]
+df
+
+```
+
+## Indexing with multiple min and max in one aggregate
+
+Task : find col1 where col2 is max, col2 where col3 is min and col1 where col3 is max:
+
+```{r eval=FALSE}
+
+df = dt.Frame({
+               "id" : [1, 1, 1, 2, 2, 2, 2, 3, 3, 3],
+               "col1" : [1, 3, 5, 2, 5, 3, 6, 3, 67, 7],
+               "col2" : [4, 6, 8, 3, 65, 3, 5, 4, 4, 7],
+               "col3" : [34, 64, 53, 5, 6, 2, 4, 6, 4, 67],
+               })
+
+df
+
+df[:,
+   {'col1' : max(ifelse(f.col2 == max(f.col2), f.col1, None)),
+    'col2' : max(ifelse(f.col3 == min(f.col3), f.col2, None)),
+    'col3' : max(ifelse(f.col3 == max(f.col3), f.col1, None))
+    },
+   by('id')]
+
+```
+
+## Filter rows based on aggregate value
+
+Task: for every word find the tag that has the most count:
+
+```{r eval=FALSE}
+
+df = dt.Frame("""word  tag count
+                  a     S    30
+                  the   S    20
+                  a     T    60
+                  an    T    5
+                  the   T    10""")
+
+# The solution builds on the knowledge that sorting
+# while grouping sorts within each group.
+df[0, :, by('word'), sort(-f.count)]
+
+```
+
+## Get the rows where the value column is minimum, and rename columns:
+
+```{r eval=FALSE}
+
+df = dt.Frame({"category": ["A"]*3 + ["B"]*3,
+               "date": ["9/6/2016", "10/6/2016",
+                        "11/6/2016", "9/7/2016",
+                        "10/7/2016", "11/7/2016"],
+               "value": [7,8,9,10,1,2]})
+
+df
+
+df[0,
+   {"value_date": f.date,
+    "value_min":  f.value},
+  by("category"),
+  sort('value')]
+
+```
+
+## Get the rows where the value column is maximum, and rename columns:
+
+```{r eval=FALSE}
+
+df[0,
+   {"value_date": f.date,
+    "value_max":  f.value},
+  by("category"),
+  sort(-f.value)]
+
+```
+
+## Get the average of the last three instances per group:
+
+```{r eval=FALSE}
+
+import random
+random.seed(3)
+
+df = dt.Frame({"Student": ["Bob", "Bill",
+                           "Bob", "Bob",
+                           "Bill","Joe",
+                           "Joe", "Bill",
+                           "Bob", "Joe",],
+               "Score": random.sample(range(10,30), 10)})
+
+df
+
+df[-3:, mean(f[:]), f.Student]
+
+```
+
+## Group by on a condition
+
+Get the sum of Amount for Number in range (1 to 4) and (5 and above):
+
+```{r eval=FALSE}
+
+df = dt.Frame("""Number, Amount
+                    1,     5
+                    2,     10
+                    3,     11
+                    4,     3
+                    5,     5
+                    6,     8
+                    7,     9
+                    8,     6""")
+
+df[:, sum(f.Amount), by(ifelse(f.Number>=5, "B", "A"))]
+
+```
+
+# Row Functions
+
+Functions rowall(), rowany(), rowcount(), rowfirst(), rowlast(), rowmax(), rowmean(), rowmin(), rowsd(), rowsum() are functions that aggregate across rows instead of columns and return a single column. These functions are equivalent to pandas aggregation functions with parameter (axis=1).
+
+These functions make it easy to compute rowwise aggregations – for instance, you may want the sum of columns A, B, C and D. You could say: f.A + f.B + f.C + f.D. Rowsum makes it easier – dt.rowsum(f['A':'D']).
+
+## rowall or rowany
+
+Filter for rows where at least one cell is greater than 0:
+
+```{r eval=FALSE}
+
+from datatable import dt, f, by
+
+df = dt.Frame({'a': [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
+               'b': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               'c': [0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0],
+               'd': [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+               'e': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+               'f': [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]})
+df
+
+```
+
+```{r eval=FALSE}
+
+df[dt.rowany(f[:] > 0), :]
+
+```
+
+Filter for rows where all the cells are 0:
+
+```{r eval=FALSE}
+
+df[dt.rowall(f[:] == 0), :]
+
+```
+
+Filter for rows where all the columns’ values are the same:
+
+```{r eval=FALSE}
+
+
+df = dt.Frame("""Name  A1   A2  A3  A4
+                 deff  0    0   0   0
+                 def1  0    1   0   0
+                 def2  0    0   0   0
+                 def3  1    0   0   0
+                 def4  0    0   0   0""")
+
+# compare the first integer column with the rest,
+# use rowall to find rows where all is True
+# and filter with the resulting boolean
+df[dt.rowall(f[1]==f[1:]), :]
+
+```
+
+## rowfirst and rowlast
+
+These look for the first and last non-missing value in a row respectively:
+
+```{r eval=FALSE}
+
+df = dt.Frame({'a': [50, 40, 30, 20, 10],
+               'b': [60, 10, 40, 0, 5],
+               'c': [40, 30, 20, 30, 40]})
+df
+
+df[dt.rowlast(f[:]) > dt.rowfirst(f[:]), :]
+
+```
+
+
+
+```{r eval=FALSE}
+
+
+```
+
+
+```{r eval=FALSE}
+
+
+```
+
+
+
+```{r eval=FALSE}
+
+
+```
+
+
+
+

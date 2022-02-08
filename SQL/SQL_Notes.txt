@@ -1,0 +1,1310 @@
+### SQL NOTES 
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+SQL statements have to be written in the following order:
+
+SELECT 
+FROM 
+WHERE 
+GROUP BY 
+HAVING 
+ORDER BY 
+LIMIT
+
+######################################################################################
+
+GROUP BY combines multiple rows into one 
+
+######################################################################################
+
+HAVING filters rows after grouping 
+
+SELECT month, sum(price)
+FROM table 
+GROUP BY month 
+HAVING sum(price) >= 6
+
+######################################################################################
+
+JOINS lets you take two tables and combine them 
+
+INNER and LEFT are the two joins one person will use most often 
+
+An inner join repeats each matching row in TableB for each row in TableA. So if there are 4 rows 
+in TableA, and 7 in TableB, the maximum rowcount is 28.
+
+######################################################################################
+
+ORDER BY and LIMIT happen at the end and affect the final output of the query 
+
+######################################################################################
+
+Window functions allow you to reference values in other rows 
+
+[expression] OVER ([window definition])
+
+SELECT item,
+       day - LAG(day) OVER (ORDER BY day)
+FROM sales 
+
+OVER() assigns every row a window
+
+A window is a set of rows 
+
+######################################################################################
+
+SELECT name, class, grade, 
+       ROW_NUMBER() OVER ( PARTITION BY class 
+                           ORDER BY grade DESC )
+
+Step 1: Assign every row a window
+OVER(PARTION BY class) means that there are 2 windown (class 1 and 2)
+
+Step 2: Run ROW_NUMBER() to find each rows rank in it's window 
+
+######################################################################################
+
+SELECT event, hour, 
+       hour - LAG(hour) OVER ( PARTITION BY event ORDER BY hour ASC ) AS time_since_last 
+FROM baby_log 
+WHERE event IN ('feeding', 'diaper')
+ORDER BY hour ASC 
+
+every event will become a new window that is ordered by hour 
+
+event     hour 
+feeding   1
+feeding   4
+feeding   7
+
+event     hour 
+diaper    3
+diaper    5
+diaper    5
+
+######################################################################################
+
+NULL is a place holder for missing data 
+
+When filtering on data, it doesn't match NULLs 
+
+SELECT * FROM fish 
+WHERE name != 'betty'
+
+To match NULLs as well, it'll need to be written as 
+
+SELECT * FROM fish 
+WHERE name != 'betty'
+OR name IS NULL
+
+######################################################################################
+
+COALESCE is a function that returns the first argument you give it that isn't NULL 
+
+COALESCE(NULL, 1, 2)  ==> 1
+
+COALESCE(NULL, NULL, NULL)  ==> NULL
+
+COALESCE(4, NULL, 2)  ==> 4
+
+name    price    discount 
+orange  200      NULL 
+apple   100      23
+lemon   150      NULL 
+
+SELECT name,
+       price - COALESCE(discount, 0) AS net_price 
+FROM products 
+
+name       net_price 
+orange     200
+apple      77
+lemon      150 
+
+######################################################################################
+
+SELECT customer,
+       COALESCE(mailing_state, billing_state, ip_address_state) AS state 
+FROM address 
+
+######################################################################################
+
+CASE can be used to categorize a column 
+
+CASE 
+   WHEN <condition>         THEN <result>
+   WHEN <other-condition>   THEN <result>
+   ...
+   ELSE <result>
+END 
+
+SELECT first_name, age,
+       CASE 
+         WHEN age < 13 THEN 'child'
+         WHEN age < 20 THEN 'teenager'
+         ELSE 'adult'
+       END AS age_range
+FROM people 
+
+######################################################################################
+
+There are three ways to count rows 
+
+1. Count all rows with COUNT(*)
+
+SELECT first_name, COUNT(*)
+FROM people 
+GROUP BY first_name 
+ORDER BY COUNT(*) DESC 
+
+2. Get the number of distinct values with COUNT(DISTINCT column)
+
+SELECT genus, COUNT(DISTINCT species)
+FROM plants 
+GROUP BY 1
+ORDER BY 2 DESC
+
+3. Count categories that are across columns using SUM and CASE
+
+SELECT owner,
+       SUM(CASE WHEN type = 'dog' then 1 else 0 end) AS num_dogs,
+       SUM(CASE WHEN type = 'cat' then 1 else 0 end) AS num_cats, 
+       SUM(CASE WHEN type NOT IN ('dog','cat') then 1 else 0 end) AS num_other,
+FROM pets 
+GROUP BY owner 
+
+######################################################################################
+
+Subqueries can be used to filter data 
+
+SELECT owner 
+FROM dogs 
+WHERE name IN (SELECT name 
+               FROM dogs 
+               GROUP BY nane
+               HAVING COUNT(*) > 2)
+
+Subqueries can be used in a FROM or WHERE statement 
+
+SELECT ...
+FROM (<subquery or cte>)
+GROUP BY ...
+
+SELECT ...
+WHERE name IN (<subquery>)
+
+######################################################################################
+
+Common table expressions let you name a query and then modify from its results 
+
+WITH popular_dog_names AS (
+    SELECT name 
+    FROM dogs 
+    GROUP BY name 
+    HAVING COUNT(*) > 2
+)
+SELECT owner 
+FROM dogs 
+INNER JOIN popular_dog_names ON dogs.name = popular_dog_names.name
+
+######################################################################################
+
+By default, when filtering data the database needs to look at every single row to find matches 
+
+Indexes are a tree structure that makes it faster to find rows
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+The standard SQL commands to interact with relational databases are CREATE, SELECT, INSERT, 
+UPDATE, DELETE and DROP.
+
+######################################################################################
+
+SQL is case insensitive, which means SELECT and select have same meaning in SQL statements. 
+
+######################################################################################
+
+SQL Server offers six categories of data types 
+
+TYPE         FROM                           TO
+
+bigint	     -9,223,372,036,854,775,808	    9,223,372,036,854,775,807
+
+int	         -2,147,483,648	                2,147,483,647
+
+smallint     -32,768	                    32,767
+
+tinyint	     0	                            255
+
+bit	         0	                            1
+
+decimal	     -10^38 +1	                    10^38 -1
+
+numeric	     -10^38 +1	                    10^38 -1
+
+money	     -922,337,203,685,477.5808	    +922,337,203,685,477.5807
+
+smallmoney	 -214,748.3648	                +214,748.3647
+
+######################################################################################
+
+An operator is a reserved word or a character used primarily in an SQL statement's WHERE clause 
+to perform operation(s), such as comparisons and arithmetic operations. 
+
+Arithmetic operators
+Comparison operators
+Logical operators
+Operators used to negate conditions
+
+Logical operators include
+
+ALL
+AND
+ANY
+BETWEEN
+EXISTS
+IN
+LIKE
+NOT
+OR
+IS NULL
+UNIQUE
+
+######################################################################################
+
+An expression is a combination of one or more values, operators and SQL functions that evaluate 
+to a value. These SQL EXPRESSIONs are like formulae and they are written in query language. 
+
+Consider the basic syntax of the SELECT statement as follows −
+
+SELECT column1, column2, columnN 
+FROM table_name 
+WHERE [CONDITION|EXPRESSION];
+
+There are different types of SQL expressions, which are mentioned below −
+
+Boolean
+Numeric
+Date
+
+SQL Boolean Expressions fetch the data based on matching a single value.  
+
+SELECT * FROM CUSTOMERS WHERE SALARY = 10000;
+
+Numeric expressions are used to perform any mathematical operation in any query.  
+
+SELECT COUNT(*) AS "RECORDS" FROM CUSTOMERS; 
+
+Date Expressions return current system date and time values −
+
+SELECT  GETDATE(); 
+
+######################################################################################
+
+The SQL CREATE DATABASE statement is used to create a new SQL database.
+
+CREATE DATABASE DatabaseName;
+
+SHOW DATABASES;
+
+######################################################################################
+
+If you want to delete an existing database <testDB>, then the DROP DATABASE statement would 
+be used
+
+DROP DATABASE testDB;
+
+SHOW DATABASES;
+
+######################################################################################
+
+When you have multiple databases in your SQL Schema, then before starting your operation, 
+you would need to select a database where all the operations would be performed.
+
+USE DatabaseName;
+
+######################################################################################
+
+The SQL CREATE TABLE statement is used to create a new table.
+
+The basic syntax of the CREATE TABLE statement is as follows −
+
+CREATE TABLE table_name(
+   column1 datatype,
+   column2 datatype,
+   column3 datatype,
+   .....
+   columnN datatype,
+   PRIMARY KEY( one or more columns )
+);
+
+You can verify if your table has been created successfully by looking at the message displayed 
+by the SQL server, otherwise you can use the DESC command 
+
+DESC CUSTOMERS;
+
+######################################################################################
+
+The SQL DROP TABLE statement is used to remove a table definition and all the data, indexes, triggers, constraints and permission specifications for that table.
+
+DROP TABLE table_name;
+
+######################################################################################
+
+The SQL INSERT INTO Statement is used to add new rows of data to a table in the database.
+
+The following statements would create six records in the CUSTOMERS table.
+
+INSERT INTO CUSTOMERS (ID,NAME,AGE,ADDRESS,SALARY)
+VALUES (1, 'Ramesh', 32, 'Ahmedabad', 2000.00 );
+
+INSERT INTO CUSTOMERS (ID,NAME,AGE,ADDRESS,SALARY)
+VALUES (2, 'Khilan', 25, 'Delhi', 1500.00 );
+
+INSERT INTO CUSTOMERS (ID,NAME,AGE,ADDRESS,SALARY)
+VALUES (3, 'kaushik', 23, 'Kota', 2000.00 );
+
+INSERT INTO CUSTOMERS (ID,NAME,AGE,ADDRESS,SALARY)
+VALUES (4, 'Chaitali', 25, 'Mumbai', 6500.00 );
+
+INSERT INTO CUSTOMERS (ID,NAME,AGE,ADDRESS,SALARY)
+VALUES (5, 'Hardik', 27, 'Bhopal', 8500.00 );
+
+INSERT INTO CUSTOMERS (ID,NAME,AGE,ADDRESS,SALARY)
+VALUES (6, 'Komal', 22, 'MP', 4500.00 );
+
+######################################################################################
+
+SELECT ID, NAME, SALARY 
+FROM CUSTOMERS
+WHERE SALARY > 2000 AND age < 25;
+
+SELECT ID, NAME, SALARY 
+FROM CUSTOMERS
+WHERE SALARY > 2000 OR age < 25;
+
+######################################################################################
+
+The SQL LIKE clause is used to compare a value to similar values using wildcard operators. 
+There are two wildcards used in conjunction with the LIKE operator.
+
+The percent sign (%)
+The underscore (_)
+
+The percent sign represents zero, one or multiple characters.
+
+The underscore represents a single number or character. These symbols can be used in combinations.
+
+WHERE SALARY LIKE '200%'
+Finds any values that start with 200.
+
+WHERE SALARY LIKE '%200%'
+Finds any values that have 200 in any position.
+
+WHERE SALARY LIKE '_00%'
+Finds any values that have 00 in the second and third positions.
+
+WHERE SALARY LIKE '2_%_%'
+Finds any values that start with 2 and are at least 3 characters in length.
+
+WHERE SALARY LIKE '%2'
+Finds any values that end with 2.
+
+WHERE SALARY LIKE '_2%3'
+Finds any values that have a 2 in the second position and end with a 3.
+ 	
+WHERE SALARY LIKE '2___3'
+Finds any values in a five-digit number that start with 2 and end with 3.
+
+######################################################################################
+
+The SQL DISTINCT keyword is used in conjunction with the SELECT statement to eliminate all 
+the duplicate records and fetching only unique records.
+
+SELECT DISTINCT SALARY FROM CUSTOMERS
+ORDER BY SALARY;
+ 
+######################################################################################
+
+The SQL Joins clause is used to combine records from two or more tables in a database. 
+A JOIN is a means for combining fields from two tables by using values common to each.
+
+There are different types of joins available in SQL −
+
+INNER JOIN − returns rows when there is a match in both tables.
+
+LEFT JOIN − returns all rows from the left table, even if there are no matches in the right table.
+
+RIGHT JOIN − returns all rows from the right table, even if there are no matches in the left table.
+
+FULL JOIN − returns rows when there is a match in one of the tables.
+
+SELF JOIN − is used to join a table to itself as if the table were two tables, temporarily renaming a
+t least one table in the SQL statement.
+
+CARTESIAN JOIN − returns the Cartesian product of the sets of records from the two or more joined tables.
+
+######################################################################################
+
+The SQL UNION clause/operator is used to combine the results of two or more SELECT statements 
+without returning any duplicate rows.
+
+To use this UNION clause, each SELECT statement must have
+
+The same number of columns selected
+The same number of column expressions
+The same data type and
+Have them in the same order
+
+SELECT  ID, NAME, AMOUNT, DATE
+   FROM CUSTOMERS
+   LEFT JOIN ORDERS
+   ON CUSTOMERS.ID = ORDERS.CUSTOMER_ID
+UNION
+   SELECT  ID, NAME, AMOUNT, DATE
+   FROM CUSTOMERS
+   RIGHT JOIN ORDERS
+   ON CUSTOMERS.ID = ORDERS.CUSTOMER_ID;
+
+The UNION ALL operator is used to combine the results of two SELECT statements including duplicate rows.
+
+SELECT  ID, NAME, AMOUNT, DATE
+   FROM CUSTOMERS
+   LEFT JOIN ORDERS
+   ON CUSTOMERS.ID = ORDERS.CUSTOMER_ID
+UNION ALL
+   SELECT  ID, NAME, AMOUNT, DATE
+   FROM CUSTOMERS
+   RIGHT JOIN ORDERS
+   ON CUSTOMERS.ID = ORDERS.CUSTOMER_ID;
+
+######################################################################################
+
+The SQL NULL is the term used to represent a missing value. 
+
+A NULL value in a table is a value in a field that appears to be blank.
+
+SELECT  ID, NAME, AGE, ADDRESS, SALARY
+   FROM CUSTOMERS
+   WHERE SALARY IS NOT NULL;
+
+SELECT  ID, NAME, AGE, ADDRESS, SALARY
+   FROM CUSTOMERS
+   WHERE SALARY IS NULL;
+
+######################################################################################
+
+A view is nothing more than a SQL statement that is stored in the database with an 
+associated name. A view is actually a composition of a table in the form of a predefined 
+SQL query.
+
+CREATE VIEW CUSTOMERS_VIEW AS
+SELECT name, age
+FROM  CUSTOMERS;
+
+######################################################################################
+
+The HAVING Clause enables you to specify conditions that filter which group results appear 
+in the results.
+
+The WHERE clause places conditions on the selected columns, whereas the HAVING clause places 
+conditions on groups created by the GROUP BY clause.
+
+SELECT ID, NAME, AGE, ADDRESS, SALARY
+FROM CUSTOMERS
+GROUP BY age
+HAVING COUNT(age) >= 2;
+
+######################################################################################
+
+SELECT duration_seconds,
+       SUM(duration_seconds) OVER (ORDER BY start_time) AS running_total
+FROM tutorial.dc_bikeshare_q1_2012
+
+The first part of the above aggregation, SUM(duration_seconds), looks a lot like any other 
+aggregation. 
+
+Adding OVER designates it as a window function. 
+
+You could read the above aggregation as "take the sum of duration_seconds over the entire 
+result set, in order by start_time."
+
+######################################################################################
+
+SELECT start_terminal,
+       duration_seconds,
+       SUM(duration_seconds) OVER
+         (PARTITION BY start_terminal ORDER BY start_time)
+         AS running_total
+FROM tutorial.dc_bikeshare_q1_2012
+WHERE start_time < '2012-01-08'
+
+The above query groups and orders the query by start_terminal. 
+
+Within each value of start_terminal, it is ordered by start_time, and the running total sums 
+across the current row and all previous rows of duration_seconds. 
+
+
+######################################################################################
+
+ROW_NUMBER() does just what it sounds like—displays the number of a given row.
+
+######################################################################################
+
+It can often be useful to compare rows to preceding or following rows, especially if you've got 
+the data in an order that makes sense. You can use LAG or LEAD to create columns that pull values 
+from other rows—all you need to do is enter which column to pull from and how many rows away you'd 
+like to do the pull. LAG pulls from previous rows and LEAD pulls from following rows:
+
+SELECT start_terminal,
+       duration_seconds,
+       LAG(duration_seconds, 1) OVER
+         (PARTITION BY start_terminal ORDER BY duration_seconds) AS lag,
+       LEAD(duration_seconds, 1) OVER
+         (PARTITION BY start_terminal ORDER BY duration_seconds) AS lead
+ FROM tutorial.dc_bikeshare_q1_2012
+ WHERE start_time < '2012-01-08'
+ ORDER BY start_terminal, duration_seconds
+
+This is especially useful if you want to calculate differences between rows:
+
+SELECT start_terminal,
+       duration_seconds,
+       duration_seconds -LAG(duration_seconds, 1) OVER
+         (PARTITION BY start_terminal ORDER BY duration_seconds)
+         AS difference
+  FROM tutorial.dc_bikeshare_q1_2012
+ WHERE start_time < '2012-01-08'
+ ORDER BY start_terminal, duration_seconds
+
+SELECT *
+  FROM (
+    SELECT start_terminal,
+           duration_seconds,
+           duration_seconds -LAG(duration_seconds, 1) OVER
+             (PARTITION BY start_terminal ORDER BY duration_seconds)
+             AS difference
+      FROM tutorial.dc_bikeshare_q1_2012
+     WHERE start_time < '2012-01-08'
+     ORDER BY start_terminal, duration_seconds
+       ) sub
+ WHERE sub.difference IS NOT NULL
+
+######################################################################################
+
+Hierarchical DBMS:  As the name suggests, this type of DBMS has a style of predecessor-successor 
+type of relationship. So, it has a structure similar to that of a tree, wherein the nodes represent 
+records and the branches of the tree represent fields.
+
+Relational DBMS (RDBMS): This type of DBMS, uses a structure that allows the users to identify and 
+access data in relation to another piece of data in the database.
+
+Network DBMS: This type of DBMS supports many to many relations wherein multiple member records can 
+be linked.
+
+Object-oriented DBMS: This type of DBMS uses small individual software called objects. Each object 
+contains a piece of data and the instructions for the actions to be done with the data.
+
+######################################################################################
+
+Using INSERT, UPDATE and DELETE in SQL databases.
+
+As the name suggests, these options let you insert new rows, make changes to existing records 
+and permanently remove records from a database. A recruiter might further ask you to write query 
+using the same, which may typically be written using INSERT, UPDATE, and DELETE functions. A 
+typical query with INSERT function might look like:
+
+INSERT INTO table_name (column1, column2, column3, …)
+
+VALUES (value1, value2, value3, …);
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+;with CTE as
+( 
+  SELECT ti.TRANS_KEY, SUM(ti.EXTENDED_PURCHASE_AMT) AS EPA_AVG
+            FROM dbo.vTransactions1 ti
+        WHERE YEAR(ti.SALES_DATE) IN ('2014') AND MONTH(ti.SALES_DATE) IN (5,6)
+        AND ti.ITEM_QTY >= 1 AND ti.BUSINESS_ENTITY = 1
+        AND ti.EXTENDED_PURCHASE_AMT > 0 AND ti.CENTER_NBR = 9778
+        AND ti.TRANSACTION_TYPE = 'S'
+        GROUP BY ti.TRANS_KEY
+) 
+select AVG(EPA_AVG) as Epa_Avg
+from CTE;
+
+######################################################################################
+
+IF OBJECT_ID('[tempdb]..[#MemberLastConsent]') IS NOT NULL
+	DROP TABLE dbo.#MemberLastConsent;
+
+WITH CTE AS
+(
+     SELECT *,
+         ROW_NUMBER() OVER
+         (
+             PARTITION BY MemberAcesId ORDER BY LocalDtTm DESC
+         ) AS row_num
+     FROM #CallHistory_2019
+	 WHERE MemberAcesId IN ( SELECT DISTINCT MemberAcesId WHERE Consent = 1 )
+)
+SELECT CTE.MemberAcesId, CTE.LocalDtTm, CTE.Consent, CTE.Contact
+INTO #MemberLastConsent
+FROM CTE
+WHERE row_num = 1
+AND CTE.Consent = 1
+
+######################################################################################
+
+with CTE as 
+( 
+    SELECT MemberAcesId, TimeSlotNum, count(*) AS cnt
+    from #CallHistoryTSlot_2019
+    group BY MemberAcesId, TimeSlotNum
+)
+select CTE.MemberAcesId, 
+       CTE.TimeSlotNum, 
+	   CASE
+           WHEN CTE.TimeSlotNum = 1 THEN 'Z_EM' 
+           WHEN CTE.TimeSlotNum = 2 THEN 'Z_LM' 
+		   WHEN CTE.TimeSlotNum = 3 THEN 'Z_EA' 
+		   WHEN CTE.TimeSlotNum = 4 THEN 'Z_LA' 
+          END AS TimeSlow,
+	   CTE.cnt,
+	   (0.0 + CTE.cnt)/( SUM(CTE.cnt) OVER (PARTITION BY MemberAcesId) ) AS Z_Score
+INTO #MemberTimeSlotZScore
+FROM CTE
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+
+### CREATE A TABLE AND ADD VALUES
+
+CREATE TABLE groceries (id INTEGER PRIMARY KEY, name TEXT, quantity INTEGER, aisle INTEGER);
+INSERT INTO groceries VALUES (1, "Bananas", 4, 7);
+INSERT INTO groceries VALUES(2, "Peanut Butter", 1, 2);
+INSERT INTO groceries VALUES(3, "Dark Chocolate Bars", 2, 2);
+INSERT INTO groceries VALUES(4, "Ice cream", 1, 12);
+INSERT INTO groceries VALUES(5, "Cherries", 6, 2);
+INSERT INTO groceries VALUES(6, "Chocolate syrup", 1, 4);
+
+SELECT * FROM groceries WHERE aisle > 5 ORDER BY aisle;
+
+######################################################################################
+
+CREATE TABLE groceries (id INTEGER PRIMARY KEY, name TEXT, quantity INTEGER, aisle INTEGER);
+INSERT INTO groceries VALUES (1, "Bananas", 56, 7);
+INSERT INTO groceries VALUES(2, "Peanut Butter", 1, 2);
+INSERT INTO groceries VALUES(3, "Dark Chocolate Bars", 2, 2);
+INSERT INTO groceries VALUES(4, "Ice cream", 1, 12);
+INSERT INTO groceries VALUES(5, "Cherries", 6, 2);
+INSERT INTO groceries VALUES(6, "Chocolate syrup", 1, 4);
+
+SELECT aisle, SUM(quantity) FROM groceries GROUP BY aisle;
+
+######################################################################################
+
+SELECT type, SUM(calories) AS total_calories FROM exercise_logs
+    GROUP BY type
+    HAVING total_calories > 150
+    ;
+
+SELECT type, AVG(calories) AS avg_calories FROM exercise_logs
+    GROUP BY type
+    HAVING avg_calories > 70
+    ; 
+    
+SELECT type FROM exercise_logs GROUP BY type HAVING COUNT(*) >= 2;
+
+######################################################################################
+
+/* CASE */
+SELECT type, heart_rate,
+    CASE 
+        WHEN heart_rate > 220-30 THEN "above max"
+        WHEN heart_rate > ROUND(0.90 * (220-30)) THEN "above target"
+        WHEN heart_rate > ROUND(0.50 * (220-30)) THEN "within target"
+        ELSE "below target"
+    END as "hr_zone"
+FROM exercise_logs;
+
+######################################################################################
+
+SELECT COUNT(*),
+    CASE 
+        WHEN heart_rate > 220-30 THEN "above max"
+        WHEN heart_rate > ROUND(0.90 * (220-30)) THEN "above target"
+        WHEN heart_rate > ROUND(0.50 * (220-30)) THEN "within target"
+        ELSE "below target"
+    END as "hr_zone"
+FROM exercise_logs
+GROUP BY hr_zone;
+
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+
+SELECT
+	ob.lead_id,
+	DATE(ob.create_date),
+	TIME(ob.create_date),
+	ob.affiliate_id,
+	ob.amount AS 'our_cost',
+	ob.won_ping,
+	ob.lead_type
+FROM our_bids AS ob
+        INNER JOIN leads AS l ON ob.lead_id = l.id
+WHERE ob.affiliate_id = 1008
+	AND lead_type = 'AUTO'
+	AND ob.id >=
+		(SELECT
+			id
+		FROM
+			(
+			SELECT id FROM our_bids
+			WHERE affiliate_id = 1008 AND lead_type = 'AUTO' AND won_ping = 1
+			ORDER BY id DESC
+			LIMIT 50
+			) tb1
+	ORDER BY id ASC
+	LIMIT 1)
+ORDER BY won_ping DESC, our_cost DESC
+LIMIT 5000;
+
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+
+### SQL for data analysis.
+
+
+The AS keyword will create an alias for a column in the data retrieved.
+
+SELECT first_name AS "First Name" 
+FROM users
+
+######################
+
+You can also combine values from different columns (within the same row).
+
+SELECT unread_count + read_count AS total_count 
+FROM emails 
+
+######################
+
+You can use the command ORDER BY to specify the column to sort the returned results. The default order is ascending, 
+but you can add the keyword DESC after specifying the column to return a descending order of results. You can also 
+specify multiple columns to order by.
+
+SELECT * 
+FROM users 
+ORDER BY year, month DESC
+
+######################
+
+If you want to filter a collection of similar records, you can specify the similarity using LIKE (or ILIKE to ignore 
+case in strings for some flavors of SQL). The % symbol can be used as a wildcard where it could represent any character 
+or set of characters. To limit the wildcard to only one character, you can use the _ symbol.
+
+SELECT * 
+FROM users 
+WHERE name LIKE 'Bill%' -- returns for Bill, Billy, Billie, etc.
+
+######################
+
+IS NULL will check to see whether or not the data in a specified column is null. Typically it is used in combination 
+with the NOT keyword to only access records which do not contain null values.
+
+SELECT * 
+FROM users 
+WHERE age IS NOT NULL
+
+######################
+
+COUNT(column) is used to return the number of rows containing non-null values in a given column. You can return the 
+total number of rows by either counting on the index column or using *.
+
+-- returns total number of users
+SELECT COUNT(*) 
+FROM users 
+
+-- returns number of users where last_name is not blank
+SELECT COUNT(last_name) 
+FROM users 
+
+######################
+
+Whereas the previously discussed WHERE command can be used to filter individual records, HAVING is used 
+to filter groups. 
+
+SELECT year,
+       month,
+       AVG(daily_open) AS monthly_avg
+FROM google_stock_price
+GROUP BY year, month
+HAVING MAX(daily_open) - MIN(daily_open) > 50
+ORDER BY month, year
+
+######################
+
+If your table has repeated values across records, you can use DISTINCT to return a set of unique values, 
+or unique combinations of values in the case of using DISTINCT for multiple columns. You can also place 
+DISTINCT inside an aggregator function to perform aggregations only on the unique set of values.
+
+-- example using DISTINCT for multiple columns
+SELECT DISTINCT year, month
+FROM google_stock_price
+
+-- example using DISTINCT within an aggregator function (suppose there are multiple stock price records per day)
+SELECT year, 
+       month, 
+       COUNT(DISTINCT day) AS days_in_month
+FROM google_stock_price
+
+######################
+
+SELECT first_name,
+       last_name, 
+       CASE WHEN age < 18 
+       THEN 'child'
+       WHEN age >= 18 
+       THEN 'adult'
+       ELSE NULL 
+       END AS legal_age_classification
+FROM users
+
+######################################################################################
+
+-- count the number of records in each age bracket
+SELECT CASE WHEN age >= 7 AND age < 22 THEN 'gen_z'
+            WHEN age >= 22 AND age < 38 THEN 'gen_y'
+            WHEN age >= 38 AND age < 53 THEN 'gen_x'
+            WHEN age >= 53 THEN 'baby_boomer'
+            ELSE 'unassigned' 
+            END AS age_group,
+            COUNT(1) AS count 
+FROM users
+GROUP BY age_group
+
+######################################################################################
+
+-- reorient the age bracket count horizontally (like a pivot table)
+SELECT COUNT(CASE WHEN age >= 7 AND age < 22 THEN 1 ELSE NULL END) AS gen_z_count,
+       COUNT(CASE WHEN age >= 22 AND age < 38 THEN 1 ELSE NULL END) AS gen_y_count,
+       COUNT(CASE WHEN age >= 38 AND age < 53 THEN 1 ELSE NULL END) AS gen_x_count,
+       COUNT(CASE WHEN age >= 53 THEN 1 ELSE NULL END) AS baby_boomer_count
+FROM users
+
+######################
+
+You can combine multiple queries, stacking the results of one on top of the other, by creating a UNION. By default, UNION will not repeat any identical rows in the results. If you want the full addition of all results across queries, you must specify that with UNION ALL. In order for two queries to be compatible for a union, they must have the same number of columns and each column should hold the same data type across both queries.
+
+SELECT *
+FROM table1
+
+UNION ALL
+
+SELECT *
+FROM table2
+
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+
+SELECT name, class, grade, 
+       ROW_NUMBER() OVER ( PARTITION BY class 
+                           ORDER BY grade DESC )
+
+Step 1: Assign every row a window
+OVER(PARTION BY class) means that there are 2 windown (class 1 and 2)
+
+Step 2: Run ROW_NUMBER() to find each rows rank in it's window 
+
+
+
+
+SELECT owner,
+       SUM(CASE WHEN type = 'dog' then 1 else 0 end) AS num_dogs,x
+       SUM(CASE WHEN type = 'cat' then 1 else 0 end) AS num_cats, 
+       SUM(CASE WHEN type NOT IN ('dog','cat') then 1 else 0 end) AS num_other,
+FROM pets 
+GROUP BY owner 
+
+
+
+
+
+-- count the number of records in each age bracket
+SELECT CASE WHEN age >= 7 AND age < 22 THEN 'gen_z'
+            WHEN age >= 22 AND age < 38 THEN 'gen_y'
+            WHEN age >= 38 AND age < 53 THEN 'gen_x'
+            WHEN age >= 53 THEN 'baby_boomer'
+            ELSE 'unassigned' 
+            END AS age_group,
+            COUNT(1) AS count 
+FROM users
+GROUP BY age_group
+
+
+
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+
+
+CREATE SCHEMA dannys_diner;
+SET search_path = dannys_diner;
+
+CREATE TABLE sales (
+  "customer_id" VARCHAR(1),
+  "order_date" DATE,
+  "product_id" INTEGER
+);
+
+INSERT INTO sales
+  ("customer_id", "order_date", "product_id")
+VALUES
+  ('A', '2021-01-01', '1'),
+  ('A', '2021-01-01', '2'),
+  ('A', '2021-01-07', '2'),
+  ('A', '2021-01-10', '3'),
+  ('A', '2021-01-11', '3'),
+  ('A', '2021-01-11', '3'),
+  ('B', '2021-01-01', '2'),
+  ('B', '2021-01-02', '2'),
+  ('B', '2021-01-04', '1'),
+  ('B', '2021-01-11', '1'),
+  ('B', '2021-01-16', '3'),
+  ('B', '2021-02-01', '3'),
+  ('C', '2021-01-01', '3'),
+  ('C', '2021-01-01', '3'),
+  ('C', '2021-01-07', '3');
+ 
+
+CREATE TABLE menu (
+  "product_id" INTEGER,
+  "product_name" VARCHAR(5),
+  "price" INTEGER
+);
+
+INSERT INTO menu
+  ("product_id", "product_name", "price")
+VALUES
+  ('1', 'sushi', '10'),
+  ('2', 'curry', '15'),
+  ('3', 'ramen', '12');
+  
+
+CREATE TABLE members (
+  "customer_id" VARCHAR(1),
+  "join_date" DATE
+);
+
+INSERT INTO members
+  ("customer_id", "join_date")
+VALUES
+  ('A', '2021-01-07'),
+  ('B', '2021-01-09');
+  
+  SELECT *
+  FROM sales
+  
+  SELECT * 
+  FROM members 
+  
+  SELECT * 
+  FROM menu
+  
+  ---- 1. What is the total amount each customer spent at the restaurant?--
+  
+  SELECT s.customer_id, SUM(m.price) AS Total_Spent 
+  FROM sales s
+  JOIN menu m
+  ON s.product_id = m.product_id
+  GROUP BY 1
+  ORDER BY 1 
+  
+  -- 2. How many days has each customer visited the restaurant?--
+  SELECT customer_id, COUNT(Distinct order_date)
+  FROM sales 
+  GROUP BY 1 
+  ORDER BY 1 
+ 
+ -- 3. What was the first item from the menu purchased by each customer?
+SELECT * 
+FROM 
+(
+  SELECT s.customer_id, s.order_date, m.product_name, 
+  dense_rank() over (partition by s.customer_id order by s.order_date asc) as rn
+  FROM sales s
+  JOIN menu m
+  ON s.product_id = m.product_id
+) as alias
+WHERE rn = 1 
+
+-- 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+
+-------- Identifying which item is the most purchased on the menu----------------------- 
+SELECT * 
+FROM
+(
+SELECT product_name, rank() over (ORDER BY COUNT(product_name) DESC) as rnk
+FROM sales s 
+JOIN menu m 
+on s.product_id = m.product_id
+GROUP BY product_name
+) as Alias 
+WHERE rnk = 1 
+
+--------- Identifying how many times it was purchased by all the customers--------------------------
+SELECT * FROM 
+(
+  SELECT m.product_name, count(m.product_name) AS count_of_item_purchased
+  FROM sales s
+  JOIN menu m
+  ON s.product_id = m.product_id
+  GROUP BY product_name
+ ) AS alias 
+ ORDER BY count_of_item_purchased desc 
+ 
+ -- 5. Which item was the most popular for each customer?
+SELECT * 
+FROM 
+(
+SELECT s.customer_id, m.product_name, COUNT(m.product_id) AS product_count, dense_rank() over (partition by s.customer_id order by COUNT(m.product_name) DESC) as RNK
+FROM sales s
+JOIN menu m 
+ON s.product_id = m.product_id
+GROUP BY 1, 2
+) as favourites
+WHERE rnk = 1 
+
+---- OR use the CTE Method ----- 
+WITH favourites AS 
+(
+	SELECT s.customer_id, m.product_name, count(m.product_id) as product_count,
+	dense_rank() over (partition by s.customer_id order by COUNT(m.product_name) DESC) as RNK
+	FROM sales s
+	JOIN menu m 
+	ON s.product_id = m.product_id
+	GROUP BY 1, 2
+)
+
+SELECT * 
+FROM favourites 
+WHERE rnk = 1;
+
+-- 6. Which item was purchased first by the customer after they became a member?
+
+SELECT *
+FROM
+(
+	SELECT s.customer_id, m.product_name, dense_rank() over (partition by s.customer_id order by s.order_date asc) as rn
+	FROM sales s 
+	JOIN menu m 
+	ON s.product_id = m.product_id
+	JOIN members a
+	ON s.customer_id = a.customer_id
+	WHERE a.join_date <= s.order_date
+) as first_order
+WHERE rn = 1;
+	
+---- Using CTE ----- 
+WITH first_order AS 
+(
+	SELECT s.customer_id, m.product_name, dense_rank() over (partition by s.customer_id order by s.order_date asc) as rn
+	FROM sales s 
+	JOIN menu m 
+	ON s.product_id = m.product_id
+	JOIN members a
+	ON s.customer_id = a.customer_id
+	WHERE a.join_date <= s.order_date
+) 
+
+SELECT * 
+FROM first_order 
+WHERE rn = 1;
+
+-- 7. Which item was purchased just before the customer became a member?
+
+SELECT * 
+FROM
+(
+	SELECT s.customer_id, m.product_name,
+	dense_rank() over (partition by s.customer_id order by s.order_date desc) as rn
+	FROM sales s 
+	JOIN menu m 
+	ON s.product_id = m.product_id
+	JOIN members a
+	ON s.customer_id = a.customer_id
+	WHERE a.join_date > s.order_date
+) AS product_before_member
+WHERE rn = 1; 
+
+---- Using CTE ---- 
+WITH product_before_member AS
+(
+	SELECT s.customer_id, m.product_name,
+	dense_rank() over (partition by s.customer_id order by s.order_date desc) as rn
+	FROM sales s 
+	JOIN menu m 
+	ON s.product_id = m.product_id
+	JOIN members a
+	ON s.customer_id = a.customer_id
+	WHERE a.join_date > s.order_date
+)
+
+SELECT * 
+FROM product_before_member 
+WHERE rn = 1;
+
+-- 8. What is the total items and amount spent for each member before they became a member?
+SELECT s.customer_id, COUNT(Distinct m.product_name) AS unique_items,
+SUM(m.price) AS Total_spent
+FROM sales s 
+JOIN menu m 
+ON s.product_id = m.product_id
+JOIN members a
+ON s.customer_id = a.customer_id
+WHERE a.join_date > s.order_date
+GROUP BY s.customer_id
+	
+-- 9.  If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+
+SELECT s.customer_id, 
+SUM(CASE WHEN m.product_name NOT IN ('sushi') THEN m.price*10 ELSE m.price*20 END) AS points
+FROM sales s
+JOIN menu m 
+ON s.product_id = m.product_id
+GROUP BY 1
+ORDER BY 1
+
+-- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+
+WITH CTE AS 
+(
+	SELECT *, a.join_date + INTERVAL '1 week' AS special_date
+	FROM members a
+)
+SELECT s.customer_id, 
+SUM(CASE WHEN s.order_date BETWEEN a.join_date AND a.special_date THEN m.price*20 
+WHEN s.order_date NOT BETWEEN a.join_date AND a.special_date AND m.product_name NOT IN ('sushi') THEN m.price*10 
+WHEN s.order_date NOT BETWEEN a.join_date AND a.special_date AND m.product_name IN ('sushi') THEN m.price*20 
+ELSE NULL END) AS special_points
+FROM CTE a
+JOIN sales s
+ON s.customer_id = a.customer_id
+JOIN menu m 
+ON m.product_id = s.product_id
+GROUP BY 1
+
+---- Using SubQuery ---- 
+SELECT s.customer_id, 
+SUM(CASE WHEN s.order_date BETWEEN a.join_date AND a.special_date THEN m.price*20 
+WHEN s.order_date NOT BETWEEN a.join_date AND a.special_date AND m.product_name NOT IN ('sushi') THEN m.price*10 
+WHEN s.order_date NOT BETWEEN a.join_date AND a.special_date AND m.product_name IN ('sushi') THEN m.price*20 
+ELSE NULL END) AS special_points
+FROM 
+(
+	SELECT *, a.join_date + INTERVAL '1 week' AS special_date
+	FROM members a
+) AS a
+JOIN sales s
+ON s.customer_id = a.customer_id
+JOIN menu m 
+ON m.product_id = s.product_id
+GROUP BY 1
+
+-----Bonus Question------ 
+
+--The following questions are related creating basic data tables that Danny and his team can use to quickly derive insights without needing to join the underlying tables using SQL.
+--Recreate the following table output using the available data -> (with member (Y/N))
+
+SELECT s.customer_id, s.order_date, m.product_name, m.price, 
+CASE WHEN a.join_date > s.order_date THEN 'N' ELSE 'Y' END AS "member"
+FROM sales s 
+JOIN menu m 
+ON s.product_id = m.product_id
+LEFT JOIN members a 
+ON s.customer_id = a.customer_id
+ORDER BY s.customer_id ASC, s.order_date ASC, m.product_name ASC
+
+
+-----Bonus Question 2 ------ 
+
+--Danny also requires further information about the ranking of customer products,
+--but he purposely does not need the ranking for non-member purchases so he expects 
+--null ranking values for the records when customers are not yet part of the loyalty 
+--program.
+SELECT *, CASE WHEN member = 'N' THEN NULL ELSE dense_rank() over (partition by customer_id, member ORDER BY order_date) END AS ranking
+FROM 
+(
+SELECT s.customer_id, s.order_date, m.product_name, m.price, 
+CASE WHEN a.join_date > s.order_date THEN 'N' ELSE 'Y' END AS "member"
+FROM sales s 
+JOIN menu m 
+ON s.product_id = m.product_id
+LEFT JOIN members a 
+ON s.customer_id = a.customer_id
+ORDER BY s.customer_id ASC, s.order_date ASC, m.product_name ASC
+) as t2
+
+---- using CTE ---- 
+
+WITH CTE2 AS
+(
+SELECT s.customer_id, s.order_date, m.product_name, m.price, 
+CASE WHEN a.join_date > s.order_date THEN 'N' ELSE 'Y' END AS "member"
+FROM sales s 
+JOIN menu m 
+ON s.product_id = m.product_id
+LEFT JOIN members a 
+ON s.customer_id = a.customer_id
+ORDER BY s.customer_id ASC, s.order_date ASC, m.product_name ASC
+)
+
+SELECT *, CASE WHEN member = 'N' THEN NULL ELSE dense_rank() over (partition by customer_id, member ORDER BY order_date) END AS ranking
+FROM CTE2
+
+
+
+
+
+
+
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+
+
+
+
+
+######################################################################################
+######################################################################################
+######################################################################################
+
+
+
+
+
+
