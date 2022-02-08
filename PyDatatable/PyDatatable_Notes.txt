@@ -1,0 +1,711 @@
+
+
+#####################################################################################
+#####################################################################################
+
+### PANDAS DATA ANALYSIS 
+
+#####################################################################################
+#####################################################################################
+
+
+#####################################################################################
+
+Exercise 1: Install the latest version of datatable
+
+!python3 -m pip install -U pip
+!python3 -m pip install -U datatable
+!python3 -m pip install numpy
+!python3 -m pip install pandas
+!python3 -m pip install pyarrow
+!wget https://raw.githubusercontent.com/vopani/datatableton/main/data/datatableton_sample.zip
+
+#####################################################################################
+
+Exercise 2: Import the datatable package as dt
+
+import datatable as dt
+
+#####################################################################################
+
+Exercise 4: Create an empty datatable frame and assign it to data
+
+data = dt.Frame()
+
+#####################################################################################
+
+Exercise 5: Create a frame with a column v1 with integer values from 0 to 9, a column v2 with 
+values ['Y', 'O', 'U', 'C', 'A', 'N', 'D', 'O', 'I', 'T'] and assign it to data
+
+data = dt.Frame(v1=range(10), v2=['Y', 'O', 'U', 'C', 'A', 'N', 'D', 'O', 'I', 'T'])
+
+#####################################################################################
+
+Exercise 7: Display the first 5 rows and the last 3 rows of data
+
+data.head(5)
+
+data.tail(3)
+
+#####################################################################################
+
+Exercise 8: Display the number of rows and number of columns in data
+
+data.nrows
+
+data.ncols
+
+#####################################################################################
+
+Exercise 9: Display the shape of data
+
+data.shape
+ 
+#####################################################################################
+
+Exercise 10: Display the column names of data
+
+data.names
+
+#####################################################################################
+
+import datatable as dt
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+
+dtable = dt.Frame(f1=range(10), f2=['Y', 'O', 'U', 'C', 'A', 'N', 'D', 'O', 'I', 'T'])
+
+dframe = pd.DataFrame({'v1': range(11), 'v2': ['N', 'E', 'V', 'E', 'R', 'G', 'I', 'V', 'E', 'U', 'P']})
+
+nparray = np.array([[0, 'C'], [1, 'O'], [2, 'D'], [3, 'E']])
+
+patable = pa.Table.from_pandas(dframe)
+
+dlist = [range(4), ['D', 'A', 'T', 'A']]
+
+ddict = {'x': range(6), 'y': ['P', 'Y', 'T', 'H', 'O', 'N']}
+
+dtup = [(0, 'L'), (1, 'E'), (2, 'A'), (3, 'R'), (4, 'N')]
+
+#####################################################################################
+
+Exercise 11: Write dtable to a csv named data.csv, to a compressed gz csv named data.gz and to a jay named data.jay
+
+dtable.to_csv('data.csv')
+
+dtable.to_csv('data.gz', compression='gzip')
+
+dtable.to_jay('data.jay')
+
+#####################################################################################
+
+Exercise 12: Read data.csv and assign it to data_csv, read data.gz and assign it to data_gz, 
+read data.jay and assign it to data_jay
+
+data_csv = dt.fread('data.csv')
+
+data_csv
+
+data_gz = dt.fread('data.gz')
+
+data_gz
+
+data_jay = dt.fread('data.jay')
+
+data_jay
+
+data_url = dt.fread(url='https://raw.githubusercontent.com/vopani/datatableton/main/data/datatableton_sample.csv')
+
+data_url
+
+data_zip = dt.fread('datatableton_sample.zip/users.csv')
+
+data_zip
+
+#####################################################################################
+
+Exercise 15: Create a dt.Frame data_pd from the pd.DataFrame dframe and create a pd.DataFrame pd_data from 
+the dt.Frame data_pd
+
+data_pd = dt.Frame(dframe)
+
+data_pd
+
+pd_data = data_pd.to_pandas()
+
+pd_data
+
+#####################################################################################
+
+import datatable as dt
+
+data = dt.fread('datatableton_sample.csv')
+
+data
+
+#####################################################################################
+
+Exercise 21: Select the columns user, product and quantity from data and assign it to data_upq and select 
+the user column from data_upq and assign it to data_u
+
+data_upq = data[:, ['user', 'product', 'quantity']]
+
+data_upq
+
+data_u = data_upq['user']
+
+data_u
+
+#####################################################################################
+
+Exercise 22: Select columns 2nd to 4th using indices from data and assign it to data_c234
+
+data_c234 = data[:, 1:4]
+
+data_c234
+
+#####################################################################################
+
+Exercise 23: Select all string columns from data and assign it to data_str
+
+data_str = data[:, str]
+
+data_str
+
+#####################################################################################
+
+Exercise 24: Select rows 4th and 1st from data and assign it to data_r41
+
+data_r41 = data[[3, 0], :]
+
+data_r41
+
+#####################################################################################
+
+Exercise 25: Select the element in the 4th row and 2nd column in data and assign it to value_1 and select 
+the 3rd element of category column in data and assign it to value_2
+
+value_1 = data[4, 3]
+
+value_1
+
+value_2 = data[2, 'category']
+
+value_2
+
+#####################################################################################
+
+Exercise 26: Select rows from data where category is Fruit and assign it to data_fruit and select rows from 
+data_fruit where product is Banana and quantity is more than 1 and assign it to data_multi_banana
+
+data_fruit = data[dt.f.category == 'Fruit', :]
+
+data_fruit
+
+data_multi_banana = data_fruit[(dt.f.product == 'Banana') & (dt.f.quantity > 1), :]
+
+data_multi_banana
+
+#####################################################################################
+
+Exercise 27: Select columns from data that have no missing values and assign it to data_nomissing_cols
+
+data_nomissing_cols = data[:, [column.countna1() == 0 for column in data]]
+
+data_nomissing_cols
+
+#####################################################################################
+
+Exercise 28: Select rows from data that have no missing values and assign it to data_nomissing_rows
+
+data_nomissing_rows = data[dt.rowcount(dt.f[:]) == data.ncols, :]
+
+data_nomissing_rows
+
+#####################################################################################
+
+Exercise 30: Select first row of each user from data and assign it to data_first
+
+data_first = data[:1, :, dt.by(dt.f.user)]
+
+data_first
+
+#####################################################################################
+
+!wget https://www.openml.org/data/get_csv/16826755/titanic.csv
+
+import datatable as dt
+
+data = dt.fread('titanic.csv')
+
+data.head()
+
+#####################################################################################
+
+Exercise 31: Print all the column names and column types of data in column-name : column-type format
+
+for i in range(data.ncols):
+    print(f'{data.names[i]} : {data.types[i].name}')
+
+#####################################################################################
+
+Exercise 33: Rename the column home.dest in data to address
+
+data.names = {'home.dest': 'address'}
+
+data.names
+
+#####################################################################################
+
+Exercise 34: Sort data in descending order of fare
+
+data = data.sort(-dt.as_type(dt.f.fare, float))
+
+data.head()
+
+#####################################################################################
+
+Exercise 35: Create a column deck in data containing only the first character of cabin
+
+data['deck'] = dt.str.slice(dt.f.cabin, None, 1)
+
+data.head()
+
+#####################################################################################
+
+Exercise 36: Create a column family in data which is the sum of two columns sibsp and parch
+
+data['family'] = dt.f.sibsp + dt.f.parch
+
+data.head()
+
+#####################################################################################
+
+Exercise 37: Create a column total_passengers in data which is the sum of family and the passenger included 
+and round the values of column age in data to the nearest integer, both together using a single inplace operation
+
+data[:, dt.update(total_passengers = dt.f.family + 1, age = dt.math.round(dt.f.age))]
+
+data.head()
+
+#####################################################################################
+
+Exercise 38: Delete the used columns sibsp and parch and the outlier rows first and last from data
+
+del data[:, ['sibsp', 'parch']]
+
+data.head()
+
+#####################################################################################
+
+Exercise 39: Replace all '?' values with NA or null as missing values in data
+
+data.replace('?', None)
+
+data.head()
+
+#####################################################################################
+
+Exercise 40: Impute all the missing values in data with -1 for numeric columns and 'unknown' for string columns
+
+data.replace({dt.math.nan: -1.0, None: 'unknown'})
+
+data.head()
+
+#####################################################################################
+
+!python3 -m pip install -U pip
+!python3 -m pip install -U datatable
+!python3 -m pip install scikit-learn
+
+import datatable as dt
+from sklearn.datasets import load_wine
+
+data = dt.Frame(load_wine(as_frame=True).frame)
+data
+
+#####################################################################################
+
+Exercise 41: Calculate the sum of column ash in data
+
+data['ash'].sum1()
+
+#####################################################################################
+
+Exercise 42: Calculate the average value of each column in data
+
+data.mean()
+
+#####################################################################################
+
+Exercise 43: Calculate the minimum value and maximum value of each column in data where target is 1
+
+data[dt.f.target == 1, :].min()
+
+data[dt.f.target == 1, :].max()
+
+#####################################################################################
+
+Exercise 44: Calculate the median value of columns flavanoids, hue and magnesium in data
+
+data[:, dt.median([dt.f.flavanoids, dt.f.hue, dt.f.magnesium])]
+
+#####################################################################################
+
+Exercise 45: Calculate the mode of columns alcohol and proline in data
+
+data[:, ['alcohol', 'proline']].mode()
+
+#####################################################################################
+
+Exercise 47: Calculate the number of unique values in each column of data
+
+data.nunique()
+
+#####################################################################################
+
+Exercise 49: Calculate the correlation between columns hue and color_intensity in data
+
+data[:, dt.corr(dt.f.hue, dt.f.color_intensity)]
+
+#####################################################################################
+
+Exercise 50: Calculate the correlation matrix between all pairs of columns in data and assign it to corr_matrix
+
+numeric_data = data[:, [int, float]]
+numeric_ncols = numeric_data.ncols
+numeric_names = list(numeric_data.names)
+corr_matrix = dt.Frame([[None] * numeric_ncols] * (numeric_ncols + 1), names=['Columns'] + numeric_names)
+corr_matrix[:, 0] = dt.Frame(numeric_names)
+
+for i in range(numeric_data.ncols):
+    for j in range(i, numeric_data.ncols):
+        corr_matrix[i, j+1] = numeric_data[:, dt.corr(dt.f[i], dt.f[j])]
+        corr_matrix[j, i+1] = corr_matrix[i, j+1]
+
+corr_matrix
+
+#####################################################################################
+
+!python3 -m pip install -U pip
+!python3 -m pip install -U datatable
+!python3 -m pip install seaborn
+
+import datatable as dt
+from seaborn import load_dataset
+
+data = dt.Frame(load_dataset('penguins'))
+
+data.replace('NA', None)
+data
+
+#####################################################################################
+
+Exercise 51: Calculate the number of rows of each species in data
+
+data[:, dt.count(), dt.by(dt.f.species)]
+
+#####################################################################################
+
+Exercise 52: Calculate the sum of body_mass_g by island in data
+
+data[:, dt.sum(dt.f.body_mass_g), dt.by(dt.f.island)]
+
+#####################################################################################
+
+Exercise 53: Calculate the mean of body_mass_g by non-null sex in data
+
+data[dt.f.sex != None, :][:, dt.mean(dt.f.body_mass_g), dt.by(dt.f.sex)]
+
+#####################################################################################
+
+Exercise 54: Calculate the maximum and minimum of flipper_length_mm together by species in data
+
+data[:, 
+     {'max_flipper_length': dt.max(dt.f.flipper_length_mm), 
+      'min_flipper_length': dt.min(dt.f.flipper_length_mm)}, 
+     dt.by(dt.f.species)]
+
+#####################################################################################
+
+Exercise 55: Calculate the median of body_mass_g by species and sex in data
+
+data[:, dt.median(dt.f.body_mass_g), dt.by([dt.f.species, dt.f.sex])]
+
+#####################################################################################
+
+Exercise 56: Calculate the standard deviation of bill_depth_mm in cm instead of mm by island in data
+
+data[:, dt.sd(dt.f.bill_depth_mm / 10), dt.by(dt.f.island)]
+
+#####################################################################################
+
+Exercise 58: Calculate the absolute correlation between bill_length_mm and bill_depth_mm by species and sex in data
+
+data[:, dt.abs(dt.corr(dt.f.bill_length_mm, dt.f.bill_depth_mm)), dt.by(dt.f.species, dt.f.sex)]
+
+#####################################################################################
+
+Exercise 59: Calculate the number of null values in sex by island in data
+
+data[dt.f.sex == None, :][:, dt.count(), dt.by(dt.f.island)]
+
+#####################################################################################
+
+Exercise 60: Sort data on bill_depth_mm grouped by sex and assign it to data_gs
+
+data_gs = data[:, :, dt.by(dt.f.sex), dt.sort(dt.f.bill_depth_mm)]
+data_gs
+
+#####################################################################################
+
+!python3 -m pip install -U pip
+!python3 -m pip install -U datatable
+!wget https://raw.githubusercontent.com/vopani/datatableton/main/data/datatableton_sample.zip
+
+import datatable as dt
+
+#####################################################################################
+
+Exercise 61: Read all the files together from datatableton_sample.zip, assign the list of frames to data 
+and print the name of each file
+
+data = list(dt.iread('datatableton_sample.zip'))
+
+for i in range(len(data)):
+    print(data[i].source.split('/')[-1])
+
+#####################################################################################
+
+Exercise 62: Assign the frames orders_jan.csv, orders_feb.csv, orders_mar.csv, returns.csv and users.csv in data 
+to individual frames orders_jan, orders_feb, orders_mar, returns and users respectively and display the head of 
+each frame
+
+orders_jan = data[1]
+
+orders_feb = data[0]
+
+orders_mar = data[2]
+
+returns = data[3]
+
+users = data[4]
+
+#####################################################################################
+
+Exercise 63: Append all rows of orders_jan, orders_feb and orders_mar into a single frame and assign it to orders_all
+
+orders_all = dt.rbind(orders_jan, orders_feb, orders_mar)
+
+#####################################################################################
+
+Exercise 64: Join orders_all to returns on Order ID and assign it to sales
+
+orders_all.key = 'Order ID'
+
+sales = returns[:, :, dt.join(orders_all)]
+
+#####################################################################################
+
+Exercise 65: Update users by joining sales to it on Return ID and Category ID
+
+sales.key = ['Return ID', 'Category ID']
+
+users = users[:, :, dt.join(sales)]
+
+#####################################################################################
+
+Exercise 66: Display the Categories that had orders in Jan or Mar
+
+dt.union(orders_jan['Category'], orders_mar['Category'])
+
+#####################################################################################
+
+Exercise 67: Display the Categories that had orders in each of the three months
+
+dt.intersect(orders_jan['Category'], orders_feb['Category'], orders_mar['Category'])
+
+#####################################################################################
+
+Exercise 68: Display the Categories that had orders only in Jan but not in Feb and Mar
+
+dt.setdiff(orders_jan['Category'], orders_feb['Category'], orders_mar['Category'])
+
+#####################################################################################
+
+Exercise 69: Display the Categories that had orders in either of the three months but never together
+
+dt.symdiff(orders_jan['Category'], orders_feb['Category'], orders_mar['Category'])
+
+#####################################################################################
+
+Exercise 70: One-hot encode the column Region in users, assign it to ohe_region and append it back to users
+
+ohe_region = dt.str.split_into_nhot(users['Region'])
+
+users.cbind(ohe_region)
+
+#####################################################################################
+
+!python3 -m pip install -U pip
+!python3 -m pip install -U datatable
+!wget https://raw.githubusercontent.com/vopani/datatableton/main/data/datatableton_sample.csv
+
+import datatable as dt
+
+data = dt.fread('datatableton_sample.csv')
+del data[:, ['age', 'category']]
+
+data
+
+#####################################################################################
+
+Exercise 71: Extract the date from timestamp and add it as a column date in data
+
+data['date'] = dt.as_type(dt.f.timestamp, 'date')
+
+#####################################################################################
+
+Exercise 72: Extract the year, month, day and day-of-week from date and add them as new columns year, month,
+day and day_of_week in data
+
+data['year'] = dt.time.year(dt.f.date)
+
+data['month'] = dt.time.month(dt.f.date)
+
+data['day'] = dt.time.day(dt.f.date)
+
+data['day_of_week'] = dt.time.day_of_week(dt.f.date)
+
+#####################################################################################
+
+Exercise 73: Extract the hour, minute and second from timestamp and add them as new columns hour, minute and second in data
+
+data['hour'] = dt.time.hour(dt.f.timestamp)
+
+data['minute'] = dt.time.minute(dt.f.timestamp)
+
+data['second'] = dt.time.second(dt.f.timestamp)
+
+#####################################################################################
+
+Exercise 74: Create a date column date_new in data using the year, month and day columns
+
+data['date_new'] = dt.time.ymd(dt.f.year, dt.f.month, dt.f.day)
+
+#####################################################################################
+
+Exercise 76: Create a lead variable of product with shift of 2 called next_product_2 in data
+
+data['next_product_2'] = dt.shift(dt.f.product, n=-2)
+
+#####################################################################################
+
+Exercise 77: Create a lag variable of date with single shift called previous_date in data
+
+data['previous_date'] = dt.shift(dt.f.date, n=1)
+
+#####################################################################################
+
+Exercise 78: Create a lag variable of timestamp by user with single shift called previous_user_time in data
+
+data = data[:, dt.f[:].extend({'previous_user_time': dt.shift(dt.f.timestamp)}), dt.by(dt.f.user)]
+
+#####################################################################################
+
+Exercise 79: Create a column date_diff which is the difference between date and previous_date in days
+
+data['date_diff'] = data[:, dt.as_type(dt.f.date, 'int') - dt.as_type(dt.f.previous_date, 'int')]
+
+#####################################################################################
+
+Exercise 80: Create a column time_diff which is the difference between timestamp and previous_user_time in seconds
+
+data['time_diff'] = data[:, (dt.as_type(dt.f.timestamp, 'int') - dt.as_type(dt.f.previous_user_time, 'int')) / 1000]
+
+#####################################################################################
+
+
+
+#####################################################################################
+
+
+
+
+
+
+#####################################################################################
+
+
+
+#####################################################################################
+
+
+
+
+
+
+
+
+
+
+
+#####################################################################################
+
+
+
+#####################################################################################
+
+
+
+
+
+
+#####################################################################################
+
+
+
+#####################################################################################
+
+
+
+
+
+
+
+
+
+
+
+#####################################################################################
+
+
+
+#####################################################################################
+
+
+
+
+
+
+#####################################################################################
+
+
+
+#####################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
