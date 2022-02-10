@@ -1,0 +1,1292 @@
+---
+title: "R Programming Notes"
+author: "Abraham Mathew"
+date: "5/18/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## BASICS 
+
+R has five basic or “atomic” classes of objects: 
+character 
+numeric (real numbers) 
+integer 
+complex 
+logical (True/False)
+
+Numeric contains decimal as well as whole number, like 12.56 or 13 
+
+Integer type can contain only whole numbers, like 5 or 123
+
+Putting capital ‘L’ after an integer forces it to be stored as an integer 
+
+Integer is a subset of numeric
+
+## EXPRESSIONS AND QUOTING 
+
+Expressions and quotes are used to capture an expression instead of evaluating it. For example, we may want to save two user inputs and save them for future execution.  
+
+```{r eval=FALSE, results='hide'}
+
+num1 = 1
+num2 = 0:9
+exp0 <- expression(num1 + num2) 
+exp0
+eval(exp0)
+# [1]  1  2  3  4  5  6  7  8  9 10
+
+num1 = "1"
+num2 = "0:9"
+num3 = paste0( num1, " + ", num2, sep="")
+num3
+eval(parse(text = num3))
+# [1]  1  2  3  4  5  6  7  8  9 10
+
+```
+
+### EXPRESSIONS 
+
+The expression function returns a vector of type "expression" containing its arguments (unevaluated).
+
+```{r eval=FALSE, results='hide'}
+
+expression(1 + 0:9)
+# expression(1 + 0:9)
+exp1 <- expression(1 + 0:9) 
+exp1
+# expression(1 + 0:9)
+
+```
+
+Because an expression is a vector, it can be indexed. 
+
+```{r eval=FALSE, results='hide'}
+
+exp2 <- expression(u, v, 1+ 0:9)
+exp2
+# expression(u, v, 1 + 0:9)
+length(exp2) 
+# 3
+
+exp2[1]
+# expression(u)
+exp2[2]
+# expression(v)
+exp2[3]
+# expression(1 + 0:9)
+mode(exp2[3])
+# expression
+
+exp2[[1]]
+# u
+exp2[[2]]
+# v 
+exp2[[3]]
+# 1 + 0:9
+mode(exp2[[3]])  
+# call
+
+```
+
+### QUOTING
+
+Quoting is the action of capturing an expression instead of evaluating it.
+The main quoting operator in base R is quote(). It returns a raw expression rather than a formula. The quote() function is similar to substitute().
+
+We typically use quote() to capture names or other user inputs. You can also convert a string to a name with as.name().
+
+```{r eval=FALSE, results='hide'}
+
+num1 = 1
+num2 = 0:9
+exp0 <- quote(num1 + num2) 
+exp0
+# num1 + num2
+eval(exp0)
+# [1]  1  2  3  4  5  6  7  8  9 10
+
+as.name(num1)
+# `1`
+as.name(num2)
+# `0`
+
+str1 = "this"
+as.name(str1)
+# this
+
+```
+
+When an object keeps track of an environment, it is said to have an enclosure. This is the reason that functions in R are sometimes referred to as closures
+
+## EVALUATING AN EXPRESSION 
+
+Expressions can be evaluated using the eval function.
+
+```{r eval=FALSE, results='hide'}
+
+num1 = 1
+num2 = 0:9
+exp0 <- expression(num1 + num2) 
+exp0
+eval(exp0)
+# [1]  1  2  3  4  5  6  7  8  9 10
+
+```
+
+If the expression is stored as a string, one will need to use the parse function to transform the string into an expression.
+
+```{r eval=FALSE, results='hide'}
+
+num1 = "1"
+num2 = "0:9"
+num3 = paste0( num1, " + ", num2, sep="")
+num3
+#"1 + 0:9"
+parse(text = num3)
+# expression(1 + 0:9)
+eval(parse(text = num3))
+# [1]  1  2  3  4  5  6  7  8  9 10
+
+```
+
+You can reverse this process and transform an expression into a string using deparse()
+
+```{r eval=FALSE, results='hide'}
+
+expression(1 + 0:9)
+# expression(1 + 0:9)
+deparse(expression(1 + 0:9))
+# "expression(1 + 0:9)"
+
+```
+
+## MODIFY AN EXPRESSION 
+
+Expressions can be accessed and modified as if they were a list. 
+
+```{r eval=FALSE, results='hide'}
+
+sum_expr <- quote(sum(1, 5)) 
+sum_expr
+# sum(1, 5)
+eval(sum_expr) 
+# 6
+sum_expr[[1]]
+sum_expr[[2]]
+sum_expr[[3]]
+
+sum_expr[[1]] <- quote(paste0) 
+sum_expr[[2]] <- quote(4) 
+sum_expr[[3]] <- quote(6) 
+sum_expr
+# paste0(4, 6)
+eval(sum_expr)
+# 46
+
+```
+
+## CALL
+
+A call returns an unevaluated expressions which consists of the named function applied to the given argument. To use the call function, the first argument is a string containing the name of a function, followed by the arguments that will be provided to that function.
+
+```{r eval=FALSE, results='hide'}
+
+sum_expr <- call("sum", 40, 50) 
+sum_expr
+# sum(40, 50)
+eval(sum_expr)
+# 90
+
+```
+
+To capture the expression a user typed into the R console when they executed a function, use the match.call function.
+
+```{r eval=FALSE, results='hide'}
+
+return_expression <- function(...){ match.call() } 
+return_expression(2, col = "blue", FALSE) 
+# return_expression(2, col = "blue", FALSE)
+return_expression(2, col = "blue", FALSE)
+# return_expression(2, col = "blue", FALSE)
+ 
+match.call(get, call("get", "abc", i = FALSE, p = 3))
+# get(x = "abc", pos = 3, inherits = FALSE)
+
+```
+
+## ENVIRONMENTS
+
+When you enter x <- 55 into the R console what you’re saying is: assign the value of 55 to a variable called x, and store this assignment in the global environment. The global environment is therefore where most R users do most of their programming and analysis.
+
+You can create a new environment using new.env(). You can assign variables in that environment using assign(). You can retrieve the value of a variable using get(). 
+
+You can get all of the variable names that have been assigned in an environment using ls()
+
+You can check if a variable name has been assigned in an environment using exists() 
+
+```{r eval=FALSE, results='hide'}
+
+my_new_env <- new.env() 
+my_new_env$x <- 4 
+my_new_env$x
+
+assign("y", 9, envir = my_new_env) 
+get("y", envir = my_new_env)
+my_new_env$y
+
+ls(my_new_env)
+
+rm(y, envir = my_new_env) 
+exists("y", envir = my_new_env) 
+exists("x", envir = my_new_env)
+my_new_env$x
+my_new_env$y
+
+```
+
+Environments are organized in parent/child relationships such that every environment keeps track of its parent, but parents are unaware of which environments are their children. 
+
+You can see the parents of the global environment using the search() function
+
+```{r eval=FALSE, results='hide'}
+
+search()
+# [1] ".GlobalEnv"         "package:covr"       "package:testthat"   "package:data.table"
+# [5] "package:profvis"    "tools:rstudio"      "package:stats"      "package:graphics"  
+# [9] "package:grDevices"  "package:utils"      "package:datasets"   "package:methods"   
+#[13] "Autoloads"          "package:base" 
+
+```
+
+## ERROR HANDLING
+
+The stop() function will generate an error.
+
+```{r eval=FALSE, results='hide'}
+
+stop("Something erroneous has occurred!")
+
+```
+
+The stopifnot() function takes a series of logical expressions as arguments and if any of them are false an error is generated specifying which expression is false. 
+
+```{r eval=FALSE, results='hide'}
+
+stopifnot(1 == 1, all.equal(pi, 3.14159265), 1 < 2) # all TRUE
+
+```
+
+The warning() function creates a warning
+
+```{r eval=FALSE, results='hide'}
+
+stop("Something is fishy!")
+
+```
+
+## TRYCATCH
+
+The tryCatch() function allows you to do condition handling. The first argument of this function is any R expression, followed by conditions which specify how to handle an error or a warning. The last argument, finally, specifies a function or expression that will be executed after the expression no matter what, even in the event of an error or a warning.
+
+```{r eval=FALSE, results='hide'}
+
+error_if_n_is_greater_than_zero <- function(n){ 
+  stopifnot(n <= 0)
+  n
+}
+
+error_if_n_is_greater_than_zero(5) 
+#Error in error_if_n_is_greater_than_zero(5) : n <= 0 is not TRUE
+
+error_if_n_is_greater_than_zero(-5)
+#-5
+
+```
+
+```{r eval=FALSE, results='hide'}
+
+beera <- function(expr){ tryCatch(expr,
+  error = function(e){
+     message("An error occurred:\n", e)
+  },
+  warning = function(w){
+     message("A warning occured:\n", w) },
+  finally = {
+     message("Finally done!")
+}) }
+
+beera(2+2)
+# Finally done!
+#[1] 4
+
+beera("two" + 2) 
+#An error occurred:
+#Error in "two" + 2: non-numeric argument to binary operator
+#Finally done!
+  
+beera(as.numeric(c(1, "two", 3)))
+#A warning occured:
+#simpleWarning in doTryCatch(return(expr), name, parentenv, handler): NAs introduced by coercion
+#Finally done!
+  
+```
+
+## DEBUGGING
+
+browser(): an interactive debugging environment that allows you to step through code one expression at a time
+
+debug() / debugonce(): a function that initiates the browser within a function
+
+trace(): a function that allows you to temporarily insert pieces of code into other functions to modify their behavior
+
+recover(): a function for navigating the function call stack after a function has thrown an error
+
+traceback(): a function that prints out the function call stack after an error occurs but does nothing if there’s no error
+
+## TRACEBACK
+
+If an error occurs, the easiest thing to do is to immediately call the traceback() function. This function returns the function call stack just before the error occurred so that you can see what level of function calls the error occurred. If you have many functions calling each other in succession, the traceback() output can be useful for identifying where to go digging first.
+
+```{r eval=FALSE}
+
+check_n_value <- function(n) { 
+  if(n > 0) {
+     stop("n should be <= 0") 
+    }
+}
+
+error_if_n_is_greater_than_zero <- function(n){ 
+  check_n_value(n)
+  n
+} 
+
+error_if_n_is_greater_than_zero(5) 
+
+traceback()
+
+```
+
+From the traceback, we can see that the error occurred in the check_n_value() function.
+
+## OBJECT ORIENTED PROGRAMMING
+ 
+### S3 OOP SYSTEM
+
+```{r } 
+
+special_num_1 <- structure(1, class = "special_number") 
+class(special_num_1)
+
+special_num_2 <- 2 
+class(special_num_2)
+
+class(special_num_2) <- "special_number" 
+class(special_num_2)
+
+shape_s3 <- function(side_lengths){
+  structure(list(side_lengths = side_lengths), class = "shape_S3")
+}
+
+square_4 <- shape_s3(c(4, 4, 4, 4)) 
+class(square_4)
+
+triangle_3 <- shape_s3(c(3, 3, 3)) 
+class(triangle_3)
+
+```
+
+Now let’s create a generic method for identifying shape_S3 objects that are squares. The creation of every generic method uses the UseMethod() function in the following way with only slight variations:
+
+```{r } 
+
+# [name of method] <- function(x) UseMethod("[name of method]") 
+
+```
+
+Let’s call this method is_square:
+
+```{r } 
+
+is_square <- function(x) UseMethod("is_square")
+
+```
+
+Now we can add the actual function definition for detecting whether or not a shape is a square by specifying is_square.shape_S3. By putting a dot (.) and then the name of the class after is_squre, we can create a method that associates is_squre with the shape_S3 class:
+
+```{r } 
+
+is_square.shape_S3 <- function(x){ 
+    length(x$side_lengths) == 4 && 
+       x$side_lengths[1] == x$side_lengths[2] && 
+           x$side_lengths[2] == x$side_lengths[3] && 
+              x$side_lengths[3] == x$side_lengths[4]
+} 
+
+is_square(square_4)
+
+is_square(triangle_3)
+
+print.shape_S3 <- function(x){ 
+   if(length(x$side_lengths) == 3){
+        paste("A triangle with side lengths of", x$side_lengths[1], x$side_lengths[2], "and",                 x$side_lengths[3])
+   } else if(length(x$side_lengths) == 4) { 
+        if(is_square(x)){
+            paste("A square with four sides of length", x$side_lengths[1]) 
+        } else {
+            paste("A quadrilateral with side lengths of", x$side_lengths[1], x$side_lengths[2],                      x$side_lengths[3], "and", x$side_lengths[4])
+        }
+  } else {
+      paste("A shape with", length(x$side_lengths), "slides.") 
+  }
+  
+  print(square_4)
+}
+
+print(triangle_3) 
+
+print(shape_s3(c(10, 10, 20, 20, 15))) 
+
+print(shape_s3(c(2, 3, 4, 5)))
+
+``` 
+ 
+#### EXAMPLE OF THE S3 SYSTEM
+
+Constructor function for polygon objects 
+
+```{r } 
+
+## x a numeric vector of x coordinates y a numeric vector of y coordinates
+
+make_poly <- function(x, y) { 
+  if(length(x) != length(y))
+     stop("'x' and 'y' should be the same length") ## Create the "polygon" object
+  object <- list(xcoord = x, ycoord = y)
+  
+  ## Set the class name
+  class(object) <- "polygon"
+  
+  object 
+}
+
+```
+
+Now that we have a class definition, we can develop some methods for operating on objects from that class.
+
+The first method we’ll define is the print() method. The print() method should just show some simple information about the object and should not be too verbose just enough information that the user knows what the object is.
+
+```{r } 
+
+# Print method for polygon objects
+# x an object of class "polygon"
+print.polygon <- function(x, ...) {
+  cat("a polygon with", length(x$xcoord), "vertices\n") 
+  invisible(x)
+}
+
+## Summary method for polygon objects
+## object an object of class "polygon" 
+summary.polygon <- function(object, ...) {
+   object <- list(rng.x = range(object$xcoord), rng.y = range(object$ycoord))
+   class(object) <- "summary_polygon"
+   object 
+}
+
+## Print method for summary.polygon objects
+## x an object of class "summary_polygon"
+print.summary_polygon <- function(x, ...) {
+  cat("x:", x$rng.x[1], "-->", x$rng.x[2], "\n") 
+  cat("y:", x$rng.y[1], "-->", x$rng.y[2], "\n")   
+  invisible(x)
+}
+
+```
+
+#### EXAMPLE OF S4 OOP 
+
+```{r } 
+
+setClass("bus_S4",
+         slots = list(n_seats = "numeric",
+                      top_speed = "numeric",
+                      current_speed = "numeric",
+                      brand = "character"))
+
+setClass("party_bus_S4",
+        slots = list(n_subwoofers = "numeric",
+                     smoke_machine_on = "logical"),
+                     contains = "bus_S4")
+
+``` 
+
+
+Now that we’ve created the bus_S4 and the party_bus_S4 classes we can create bus objects using the new() function.
+
+```{r } 
+
+my_bus <- new("bus_S4", n_seats = 20, top_speed = 80, current_speed = 0, brand = "Volvo")
+my_bus
+
+my_party_bus <- new("party_bus_S4", n_seats = 10, top_speed = 100, current_speed = 0, brand = "Mercedes-Benz", n_subwoofers = 2)
+my_party_bus
+
+```
+
+You can use the @ operator to access the slots of an S4 object
+
+In order to implement a new generic method you need to use the setGeneric() function
+
+Let’s create a generic function called is_bus_moving() to see if a bus_S4 object is in motion
+
+```{r } 
+
+my_bus@n_seats 
+
+my_party_bus@top_speed
+
+setGeneric("new_generic", function(x){ 
+    standardGeneric("new_generic")
+})
+
+setGeneric("is_bus_moving", function(x){ 
+    standardGeneric("is_bus_moving")
+})
+
+```
+
+In addition to creating your own generic methods, you can also create a method for your new class from an existing generic. First use the setGeneric() function with the name of the existing method you want to use with your class, and then use the setMethod() function like in the previous example. Let’s make a print() method for the bus_S4 class:
+
+```{r } 
+
+setMethod("is_bus_moving", c(x = "bus_S4"), 
+    function(x){ x@current_speed > 0
+})
+
+is_bus_moving(my_bus) 
+
+my_bus@current_speed <- 1 
+
+is_bus_moving(my_bus)
+
+setGeneric("print")
+
+setMethod("print",
+    c(x = "bus_S4"),
+   function(x){
+         paste("This", x@brand, "bus is traveling at a speed of", x@current_speed)
+}) 
+
+print(my_bus)
+
+```
+
+## ENVIRONMENTS AND CLOSURE
+
+An object is the binding of a name and a value in an environment. When starting an R session, you are in the global environment
+
+A function creates a new environment
+
+```{r }
+
+z <- 25
+
+z_func <- function() { 
+   z <- 12
+   z 
+}
+
+z_func() 
+## [1] 12 
+z
+## [1] 25
+
+```
+
+Functions are of a type called a closure because they enclose their own environment. At creation they have a look around in the environment in which they are created and capture all the names and values that are available there. They don’t just know the names of the objects in their own environment, but also in the environment in which they were created
+
+Lets make a function that adds a column to a data frame that is the square of a column it already contains.
+
+```{r }
+
+typeof(z_func) 
+## [1] "closure"
+
+add_squared <- function(x, col_name) {
+    new_colname <- paste0(deparse(col_name), "_sq") 
+    x[, new_colname] <- x[, deparse(col_name)]^2
+    x
+}
+
+add_squared(mtcars, quote(cyl)) %>% head(1)
+
+```
+
+It would be more helpful if the function did the quoting for you. Unfortunately placing quote(col_name) inside the function body is of no use. quote() makes a literal quote of its input. So it would make the name col_name here each time it was called, no matter the value that was given to the argument, rather than quoting the value that was provided to this argument.
+
+Here we need substitute(). This will lookup all the object names provided to it, and if it finds a value for that name, it will substitute the name for its value. Lets do a filter function to demonstrate.
+
+```{r }
+
+my_filt <- function(x, filt_cond) { 
+    filt_cond_q <- substitute(filt_cond) 
+    rows_to_keep <- eval(filt_cond_q, x) 
+    x[rows_to_keep, ]
+}
+
+my_filt(mtcars, mpg == 21)
+
+```
+
+How does eval() now know that mpg is a column in x? 
+
+We provided x to the eval function, but how does this work? Well, the data frame x was provided to the envir argument of eval(). A data frame, thus, is a valid environment in which we can evaluate expressions. mpg lives in x, so the evaluation of filt_cond_q here gives the desired result.
+
+## FORMULA AND OVERSCOPING
+
+```{r }
+
+mod <- lm(vs ~ mpg + cyl, data = mtcars)
+
+```
+
+Just like functions, do formulas enclose the environment they are created in. Meaning that when the formula is evaluated later in a different environment, it can still access all the object that lived in its original environment.
+
+Formulas, thus, can find variables in multiple environments. Like so:
+
+```{r }
+
+not_in_df <- rnorm(32)
+
+lm(disp ~ not_in_df, data = mtcars)
+
+```
+
+But what if the name exists in both environments, which one prevails?
+
+```{r }
+
+cyl <- "this would throw an error" 
+
+lm(disp ~ cyl, data = mtcars)
+
+```
+
+Thus, the data environment is evaluated before the enclosed environment, we say the data environment does overscope.
+
+## FUNCTION COMPONENTS 
+
+All functions in R have the following components:
+
+the body() - the code inside the function.
+
+the formals() - the list of arguments which controls how you can call the function. • the 
+
+environment() - the “map” of the location of the function’s variables.
+
+```{r }
+
+all.equal(quote(some_name), rlang::expr(some_name)) ## [1] TRUE
+
+all.equal(quote(x + 5), rlang::expr(x+ 5))
+
+require("pryr") 
+require("rlang") 
+library(sloop)
+
+f <- function(x) x^2 
+
+f
+#> function(x) x^2
+
+formals(f)
+#> $x
+
+body(f)
+#> x^2
+
+environment(f)
+#> <environment: R_GlobalEnv>
+
+```
+
+There is one exception to the rule that functions have three components. Primitive functions, like sum(), call C code directly with .Primitive() and contain no R code. Therefore their formals(), body(), and environment() are all NULL
+
+## ELIPSES (...)
+
+There is a special argument called ... . This argument will match any arguments not otherwise matched, and can be easily passed on to other functions. This is useful if you want to collect arguments to call another function, but you don’t want to prespecify their possible names.
+
+To capture ... in a form that is easier to work with, you can use list(...).
+
+## RETURN VALUES FROM A FUNCTION
+
+The last expression evaluated in a function becomes the return value, the result of invoking the function.
+
+```{r }
+
+f <- function(x) { 
+   10
+}
+
+f(stop("This is an error!")) 
+#> [1] 10
+
+f <- function(x) { 
+  force(x)
+  10
+}
+
+f(stop("This is an error!"))
+#> Error in force(x): This is an error!
+
+f <- function(...) { 
+  names(list(...))
+}
+
+f(a = 1, b = 2) 
+#> [1] "a" "b"
+
+f <- function(x) { 
+  if (x < 10) {
+     0
+  } else { 
+    10
+  }
+}
+
+f(5)
+#> [1] 0 
+
+f(15)
+#> [1] 10
+
+```
+
+Generally, I think it’s good style to reserve the use of an explicit return() for when you are returning early, such as for an error, or a simple case of the function.
+
+Functions can return only a single object. But this is not a limitation because you can return a list containing any number of objects.
+
+Functions can return invisible values, which are not printed out by default when you call the function.
+
+```{r }
+
+f1 <- function() 1
+
+f2 <- function() invisible(1)
+
+f1()
+#> [1] 1 f2()
+f1() == 1 
+#> [1] TRUE 
+f2() == 1 
+#> [1] TRUE
+
+```
+
+## CREATING ENVIRONMENTS
+
+To create an environment, use rlang::env().
+
+In base R use new.env() to creates a new environment
+
+The job of an environment is to associate, or bind, a set of names to a set of values. You can think of an
+
+```{r }
+
+# Some API changes that haven't made it in rlang yet
+search_envs <- function() { 
+    rlang:::new_environments(c(
+    list(global_env()),
+    head(env_parents(global_env()), -1) ))
+}
+
+e1 <- env( a = FALSE, b = "a", c = 2.3, d = 1:3 )
+
+```
+
+The env_print() functions gives us a little more information on the environment
+
+You can use env_names() to get a character vector giving the current bindings/objects
+
+The current environment, or current_env() is the environment in which code is currently executing. When you’re experimenting interactively, that’s usually the global environment, or global_env(). The global environment is sometimes called your “workspace”, as it’s where all interactive (i.e. outside of a funtion) computation takes place.
+
+Every environment has a parent, another environment. The parent is what’s used to implement lexical scoping: if a name is not found in an environment, then R will look in its parent (and so on).
+
+You can set the parent environment by supplying an unnamed argument to env(). If you don’t supply it, it defaults to the current environment.
+
+Only one environment doesn’t have a parent: the empty environment.
+
+You can get and set elements of a environment with $ and [[ in the same way as a list 
+
+You can determine if an environment has a binding with env_has():
+
+```{r }
+
+env_print(e1)
+#> <environment: 0x1c31018> #> parent: <env: global> #> bindings:
+#> * a: <lgl>
+#> * b: <chr>
+#> * c: <dbl>
+#>    * d: <env: 0x1c31018>
+
+env_names(e1)
+#> [1] "a" "b" "c" "d"
+
+e2a <- env(d = 4, e = 5)
+e2b <- env(e2a, a = 1, b = 2, c = 3)
+
+env_parent(empty_env())
+#> Error: The empty environment has no parent
+
+e3 <- env(x = 1, y = 2) 
+e3$x
+#> [1] 1
+e3$z <- 3
+e3[["z"]] 
+#> [1] 3
+env_has(e3, "a") #> a
+#> TRUE
+
+```
+
+## FUNCTIONAL PROGRAMMING 
+
+Imagine you’ve loaded a data file, like the one below, that uses −99 to represent missing values. You want to replace all the −99s with NAs.
+
+```{r }
+
+# Generate a sample dataset
+set.seed(1014)
+df <- data.frame(replicate(6, sample(c(1:10, -99), 6, rep = TRUE)))
+names(df) <- letters[1:6] 
+df
+
+```
+
+To do this using a functional programming approach, we can write a function that fixes the missing values in a single vector. We would then apply this function to every column in the data frame by combining two functions.
+
+One function, fix_missing(), knows how to fix a single vector; the other, lapply(), knows how to do something to each column in a data frame.
+
+lapply() takes three inputs: x, a list; f, a function; and ..., other arguments to pass to f(). It applies the function to each element of the list and returns a new list.
+
+lapply() is called a functional, because it takes a function as an argument. We can apply lapply() to this problem because data frames are lists. We just need a neat little trick to make sure we get back a data frame, not a list. Instead of assigning the results of lapply() to df, we’ll assign them to df[].
+
+```{r }
+
+lapply(mtcars, function(x) length(unique(x)))
+
+```
+
+```{r }
+
+fix_missing <- function(x) { 
+   x[x == -99] <- NA
+   x
+}
+
+df[] <- lapply(df, fix_missing) 
+
+df$a[df$a == -99] 
+df$b[df$b == -99] 
+df$c[df$c == -98] 
+
+```
+ 
+## LISTS OF FUNCTIONS  
+ 
+In R, functions can be stored in lists. 
+
+This makes it easier to work with groups of related functions, in the same way a data frame makes it easier to work with groups of related vectors.
+
+We’ll start with a simple benchmarking example. Imagine you are comparing the performance of multiple ways of computing the arithmetic mean. You could do this by storing each approach (function) in a list:
+
+```{r }
+
+compute_mean <- list(
+    base = function(x) mean(x),
+    sum = function(x) sum(x) / length(x), 
+    manual = function(x) {
+        total <- 0
+        n <- length(x)
+        for (i in seq_along(x)) { 
+          total <- total + x[i] / n
+        }
+     total 
+    }
+)
+
+str(compute_mean)
+
+```
+
+Calling a function from a list is straightforward. You extract it then call it:
+
+```{r eval = FALSE}
+
+x <- runif(1e5) system.time(compute_mean$base(x))
+#> user system elapsed
+#> 0.001 0.000 0.000 
+system.time(compute_mean[[2]](x))
+#> user system elapsed
+#> 0.001 0.000 0.000 
+system.time(compute_mean[["manual"]](x)) 
+#> user system elapsed
+#> 0.012 0.000 0.012
+
+```
+
+## FUNCTIONALS
+
+A higher-order function is a function that takes a function as an input or returns a function as output. We’ve already seen one type of higher order function: closures, functions returned by another function. The complement to a closure is a functional, a function that takes a function as an input and returns a vector as output. A common use of functionals is as an alternative to for loops.
+
+```{r eval = FALSE}
+
+randomise <- function(f) f(runif(1e3)) 
+randomise(mean)
+#> [1] 0.506
+randomise(mean)
+#> [1] 0.501
+randomise(sum) #> [1] 489
+
+ # Create some random data
+l <- replicate(20, runif(sample(1:10, 1)), simplify = FALSE)
+
+# With a for loop
+out <- vector("list", length(l)) 
+for (i in seq_along(l)) {
+    out[[i]] <- length(l[[i]]) 
+}
+unlist(out)
+#> [1] 3 1 1 2 210 5 9 7 2 410 8 2 9 7 3 2 2 8
+
+# With lapply
+unlist(lapply(l, length))
+#> [1] 3 1 1 2 210 5 9 7 2 410 8 2 9 7 3 2 2 8
+ # Divide each column by the mean
+
+mtcars[] <- lapply(mtcars, function(x) x / mean(x))
+
+```
+
+There are three basic ways to loop over a vector:
+– loop over the elements: for (x in xs)
+– loop over the numeric indices: for (i in seq_along(xs)) 
+– loop over the names: for (nm in names(xs))
+
+There are three basic ways to use lapply(): 
+– lapply(xs, function(x) {})
+– lapply(seq_along(xs), function(i) {})
+– lapply(names(xs), function(nm) {})
+
+The main apply statements in R are the following
+– sapply() and vapply(), variants of lapply() that produce vectors, matrices, and arrays as output, instead of lists.
+– Map() and mapply() which iterate over multiple input data structures in parallel.
+– mclapply() and mcMap(), parallel versions of lapply() and Map().
+– Writing a new function, rollapply(), to solve a new problem.
+
+```{r }
+
+sapply(mtcars, is.numeric)
+
+vapply(mtcars, is.numeric, logical(1))
+
+sapply(list(), is.numeric)
+
+vapply(list(), is.numeric, logical(1))
+
+```
+
+How would you find a weighted mean when you have two lists, one of observations and the other of weights?
+
+A cleaner alternative is to use Map, a variant of lapply(), where all arguments can vary. This lets us write:
+
+```{r }
+
+# Generate some sample data
+xs <- replicate(5, runif(10), simplify = FALSE)
+ws <- replicate(5, rpois(10, 5) + 1, simplify = FALSE)
+
+unlist(lapply(xs, mean))
+#> [1] 0.678 0.445 0.427 0.469 0.560
+
+unlist(lapply(seq_along(xs), function(i) { weighted.mean(xs[[i]], ws[[i]])
+}))
+#> [1] 0.695 0.464 0.403 0.501 0.521
+
+unlist(Map(weighted.mean, xs, ws)) 
+#> [1] 0.695 0.464 0.403 0.501 0.521
+
+```
+
+apply(), sweep(), and outer() work with matrices.
+
+tapply() summarises a vector by groups defined by another vector.
+
+## OBJECT ORIENTED PROGRAMMING 
+
+```{R eval=FALSE}
+
+# devtools::install_github("hadley/sloop")
+library(sloop)
+
+otype(1:10) 
+#> [1] "base"
+
+otype(mtcars) 
+#> [1] "S3"
+
+mle_obj <- stats4::mle(function(x = 1) (x - 2) ^ 2) 
+otype(mle_obj)
+#> [1] "S4"
+
+```
+
+The primary attribute that distinguishes between base and OO object is the “class”. Base objects do not have a class attribute.
+
+While only OO objects have a class attribute, every object has a base type.
+
+### S3 OOP
+
+An S3 object is built on top of a base type with the “class” attribute set.
+
+```{R eval=FALSE}
+
+typeof(1:10)
+#> [1] "integer"
+
+typeof(mtcars) 
+#> [1] "list"
+
+f <- factor("a")
+typeof(f)
+#> [1] "integer" 
+attributes(f) 
+#> $levels
+#> [1] "a"
+#>
+#> $class
+#> [1] "factor"
+
+```
+
+unclass() strips the class attribute from its input, so it is a useful tool for seeing what special behaviour an S3 class adds.
+
+A generic and its methods are functions that operate on classes.
+
+The role of a generic is to find the right method for the arguments that it is provided. 
+
+A method is a function that implements the generic behaviour for a specific class. 
+
+In other words the job of the generic is to find the right method; the job of the method is to do the work.
+
+To make an object an instance of a class, you simply take an existing object and set the class attribute. You can do that during creation with structure(), or after the fact with class<-()
+
+You can determine the class of any object using class(x), and see if an object inherits from a specific class using inherits(x, “classname”).
+
+The job of an S3 generic is to perform method dispatch, i.e. find the function designed to work specifically for the given class. 
+
+S3 generics have a simple structure: they call UseMethod(), which then calls the right method.
+
+UseMethod() takes two arguments: the name of the generic function (required), and the argument to use for method dispatch (optional). If you omit the second argument it will dispatch based on the first argument, which is what I generally advise.
+
+```{r }
+
+ # Create and assign class in one step
+foo <- structure(list(), class = "foo")
+
+# Create, then set class
+foo <- list() 
+class(foo) <- "foo"
+
+class(foo)
+#> [1] "foo" 
+
+inherits(foo, "foo") 
+#> [1] TRUE
+
+ # Dispatches on x
+generic <- function(x, y, ...) { 
+    UseMethod("generic")
+}
+
+# Dispatches on y
+generic2 <- function(x, y, ...) { 
+    UseMethod("generic2", y)
+}
+
+```
+
+We can see that they have a single call to UseMethod() with the name of the generic function passed to it. This is the dispatcher function which will handle all the background details.
+
+#### S3 OOP EXAMPLE
+
+For the sake of example, we make a new generic function called grade.
+
+```{r }
+
+grade <- function(obj) { 
+   UseMethod("grade")
+}
+ 
+```
+
+A generic function is useless without any method. Let us implement the default method.
+Now let us make method for our class “student”.
+
+```{r }
+
+grade.default <- function(obj) { 
+    cat("This is a generic function\n")
+}
+
+grade.student <- function(obj) { 
+    cat("Your grade is", obj$GPA, "\n")
+}
+
+``` 
+
+### S4 OOP
+
+S4 classes have formal definitions provided by a call to setClass(). 
+
+The fields of an S4 object are called slots and are accessed with the special @ operator.
+
+Methods are defined by a call to setMethod(). 
+
+S4 generics can dispatch on multiple arguments (multiple dispatch).
+
+To define an S4 class, you must define three key properties:
+    - The class name. By convention, S4 class names use UpperCamelCase.
+    - A named character vector that describes the names and classes of the slots (fields). For example, a person might be represented by a character name and a numeric age: c(name = “character”, age = “numeric”). The pseudo-class “ANY” allows a slot to accept objects of any type.
+    - The name of a class (or classes) to inherit behaviour from, or in S4 terminology, the classes that it contains.
+
+#### S4 OOP EXAMPLE
+
+Lets make this concrete with an example. Here we create two classes: a person with character name and numeric age, and an Employee that inherits slots and methods from Person, adding an additional boss slot that must be a Person. 
+
+setClass() returns a low-level constructor function, which should be given the class name with a . prefix.
+
+```{e }
+
+# person class
+.Person <- setClass("Person", slots = c(
+    name = "character",
+    age = "numeric"
+  )
+)
+
+# enployee class
+.Employee <- setClass("Employee", contains = "Person",
+  slots = c(
+      boss = "Person"
+    )
+)
+
+```
+
+We can now use the constructor to create an object from that class. You can access the slots with @ or slot(): @ is equivalent to $, and slot() to [[.
+
+```{r }
+hadley <- .Person(name = "Hadley", age = 37) 
+hadley
+#> An object of class "Person"
+#> Slot "name":
+#> [1] "Hadley"
+#>
+#> Slot "age":
+#> [1] 37
+
+hadley@age
+#> [1] 37 
+slot(hadley, "age") 
+#> [1] 37
+
+```
+
+You can list all available slots with slotNames() 
+
+Slots should be considered an internal implementation detail. That means as a user, you should not reach into someone else’s object with @, but instead, look for a method that provides the information you want. As a developer, you should make sure that all public facing slots have their own accessor methods.
+
+The job of a generic is to perform method dispatch, i.e. find the method designed to handle the combination of classes passed to the generic. Here you’ll learn how to define S4 generics and methods, then in the next section we’ll explore precisely how S4 method dispatch works.
+
+S4 generics have a similar structure to S3 generics, but are a little more formal. To create an new S4 generic, you call setGeneric() with a function that calls standardGeneric(). 
+
+```{r }
+
+setGeneric("myGeneric", function(x) standardGeneric("myGeneric"))
+
+```
+
+A generic isn’t useful without some methods, and in S4 you add methods with setMethod(). There are three important arguments: the name of the generic, the name of the class, and the method itself.
+
+## Metaprogramming
+
+Metaprogramming is the ability of code to inspect and modify other code. 
+
+In R, functions that use metaprogramming are commmonly said to use non-standard evalution, or NSE for short. That’s because they evaluate one (or more) of their arguments in a non-standard way.
+
+A common use of metaprogramming is to allow you to use names of variables in a dataframe as if they were objects in the environment. This makes interactive exploration more fluid at the cost of introducing some minor ambiguity. 
+
+For example, take base::subset(). It allows you to pick rows from a dataframe based on the values of their observations 
+
+To compute on the language, we first need to understand its structure.
+
+Take this code, which takes a variable x multiplies it by 10 and saves the result to a new variable called y. It doesn’t work because we haven’t defined a variable called x 
+
+It would be nice if we could capture the intent of the code, without executing the code. In other words, how can we separate our description of the action from performing it? 
+
+One way is to use rlang::expr():
+expr() returns a quoted expression: the R code that captures our intent.
+eval() which allows you to take such an expression and perform, or evaluate, it:
+
+## Tidyeval
+
+Tidyeval refers to users to create functions and processes whereby one can use non standard evaluation to interact with data and variable names. The primary advantage and motivation of many of the tidyverse tools is that the need to quote variable names is removed through the use of NSE.
+
+Create an expression using the following
+
+```{r }
+
+y <- x * 10
+#> Error in eval(expr, envir, enclos): object 'x' not found
+
+z <- expr(y <- x * 10) 
+z
+#> y <- x * 10
+
+x <- 4 
+eval(z) 
+y
+#> [1] 40
+
+```
+
+Most of the time you type code into the console, and R takes care of turning the characters you’ve typed into an AST. But occasionally you have code stored in a string, and you want to parse it yourself. You can do so using rlang::parse_expr():
+
+```{r }
+
+x1 <- "y <- x + 10" 
+
+lobstr::ast(!!x1) 
+#> "y <- x + 10"
+
+x2 <- rlang::parse_expr(x1) 
+x2
+#> y <- x + 10 
+
+lobstr::ast(!!x2)
+#> `<-` 
+#> y 
+#> `+` 
+#> x 
+#> 10
+
+```
+
+When you write a function for others to use, you need to avoid non-standard evaluation and so avoid all of these functions (culprits include many dplyr and tidyr functions– including mutate, select, filter, group_by, summarize, gather, spread– but also some functions in ggplot2, including aes). Fortunately, these functions all have standard evaluation alternatives, which typically have the same function name followed by an underscore (for example, the standard evaluation version of mutate is mutate_).
+
